@@ -4,7 +4,7 @@
     <div class="book-detail">
         <div class="detail-cover">
             <?php if (!empty($book['thumbnail'])): ?>
-                <img data-src="<?= e($book['thumbnail']) ?>" alt="<?= e($book['title']) ?>" class="lazy">
+                <img src="<?= e($book['thumbnail']) ?>" alt="<?= e($book['title']) ?>" onload="this.classList.add('loaded')">
             <?php else: ?>
                 <div class="book-cover-large" style="background: linear-gradient(135deg, #667eea, #764ba2);">
                     📖

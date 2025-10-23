@@ -115,3 +115,31 @@ function jsonResponse(array $data, int $code = 200): void {
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+/**
+ * Upgrade Google Books thumbnail URL to higher resolution
+ * Note: Google Books typically supports zoom 0-1, higher values may not be available
+ */
+function upgradeGoogleBooksThumbnail(?string $url, int $zoom = 1): ?string {
+    if (!$url) {
+        return null;
+    }
+
+    // Only modify Google Books URLs
+    if (strpos($url, 'books.google.com') === false) {
+        return $url;
+    }
+
+    // Limit zoom to safe values (0-1)
+    $zoom = max(0, min(1, $zoom));
+
+    // Replace zoom parameter
+    $url = preg_replace('/zoom=\d+/', "zoom={$zoom}", $url);
+
+    // If no zoom parameter exists, add it
+    if (strpos($url, 'zoom=') === false) {
+        $url .= "&zoom={$zoom}";
+    }
+
+    return $url;
+}

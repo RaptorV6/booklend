@@ -184,11 +184,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<span class="badge badge-available">Dostupné (${book.available_copies})</span>`
                 : `<span class="badge badge-unavailable">Vypůjčeno</span>`;
 
+            const coverHtml = book.thumbnail
+                ? `<div class="book-cover">
+                       <img src="${escapeHtml(book.thumbnail)}" alt="${escapeHtml(book.title)}" onload="this.classList.add('loaded')" style="width: 100%; height: 280px; object-fit: cover;">
+                   </div>`
+                : `<div class="book-cover" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                       📖
+                   </div>`;
+
             card.innerHTML = `
                 <a href="${getBaseUrl()}/kniha/${escapeHtml(book.slug)}">
-                    <div class="book-cover" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                        📖
-                    </div>
+                    ${coverHtml}
                     <div class="book-info">
                         <h3 class="book-title">${escapeHtml(book.title)}</h3>
                         <p class="book-author">${escapeHtml(book.author)}</p>
@@ -202,6 +208,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return card;
         }
     }
+
+    // ════════════════════════════════════════════════════════
+    // Handle Broken Images (including Google's "image not found")
+    // ════════════════════════════════════════════════════════
+
+    document.addEventListener('error', (e) => {
+        if (e.target.tagName === 'IMG') {
+            const img = e.target;
+
+            // Prevent infinite error loop
+            if (img.dataset.errorHandled) return;
+            img.dataset.errorHandled = 'true';
+
+            // Create placeholder element
+            const placeholder = document.createElement('div');
+            placeholder.className = img.className.replace('loaded', '');
+            placeholder.style.cssText = img.style.cssText || 'width: 100%; height: 280px;';
+            placeholder.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+            placeholder.style.display = 'flex';
+            placeholder.style.alignItems = 'center';
+            placeholder.style.justifyContent = 'center';
+            placeholder.style.fontSize = '4rem';
+            placeholder.textContent = '📖';
+
+            // Replace image with placeholder
+            img.parentNode.replaceChild(placeholder, img);
+        }
+    }, true); // Use capture phase to catch errors
 
     // ════════════════════════════════════════════════════════
     // Helpers

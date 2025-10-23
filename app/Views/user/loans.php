@@ -11,7 +11,7 @@
             <?php foreach ($rentals as $rental): ?>
                 <div class="loan-card">
                     <?php if ($rental['thumbnail']): ?>
-                        <img data-src="<?= e($rental['thumbnail']) ?>" alt="<?= e($rental['title']) ?>" class="loan-cover lazy">
+                        <img src="<?= e($rental['thumbnail']) ?>" alt="<?= e($rental['title']) ?>" class="loan-cover" onload="this.classList.add('loaded')">
                     <?php else: ?>
                         <div class="loan-cover-placeholder">📖</div>
                     <?php endif; ?>

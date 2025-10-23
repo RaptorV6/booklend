@@ -19,8 +19,13 @@ define('CACHE_MAX_FILES', 10000);
 define('APP_NAME', 'BookLend');
 define('BASE_URL', 'http://localhost/booklend/public');
 
-// Google Books API
+// Google Books API (fallback)
 define('GOOGLE_BOOKS_API', 'https://www.googleapis.com/books/v1/volumes');
+define('GOOGLE_BOOKS_API_KEY', 'AIzaSyCRGRFxGdpwlp96t_ZaUgr43D8XSTwx_tA');
+
+// Open Library API (primary - better images, more reliable)
+define('OPEN_LIBRARY_API', 'https://openlibrary.org/api/books');
+define('OPEN_LIBRARY_COVERS', 'https://covers.openlibrary.org/b/isbn');
 
 // Timezone
 date_default_timezone_set('Europe/Prague');

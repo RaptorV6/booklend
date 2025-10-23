@@ -14,9 +14,15 @@
         <?php foreach ($books as $book): ?>
             <div class="book-card">
                 <a href="<?= BASE_URL ?>/kniha/<?= e($book['slug']) ?>">
-                    <div class="book-cover" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                        📖
-                    </div>
+                    <?php if (!empty($book['thumbnail'])): ?>
+                        <div class="book-cover">
+                            <img src="<?= e($book['thumbnail']) ?>" alt="<?= e($book['title']) ?>" onload="this.classList.add('loaded')" style="width: 100%; height: 280px; object-fit: cover;">
+                        </div>
+                    <?php else: ?>
+                        <div class="book-cover" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                            📖
+                        </div>
+                    <?php endif; ?>
 
                     <div class="book-info">
                         <h3 class="book-title"><?= e($book['title']) ?></h3>
