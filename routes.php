@@ -8,6 +8,7 @@
 $router->get('/', 'BookController', 'catalog');
 $router->get('/kniha/{slug}', 'BookController', 'detail');
 $router->get('/api/search', 'BookController', 'search');
+$router->get('/api/books', 'BookController', 'apiGetBooks');
 
 // Auth routes
 $router->get('/login', 'AuthController', 'showLogin');

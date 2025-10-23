@@ -42,14 +42,6 @@ class Router {
         $uri = rtrim($uri, '/');
         if ($uri === '') $uri = '/';
 
-        // DEBUG
-        echo "<!-- Router DEBUG -->\n";
-        echo "<!-- Original URI: " . $_SERVER['REQUEST_URI'] . " -->\n";
-        echo "<!-- Base path: " . $basePath . " -->\n";
-        echo "<!-- Cleaned URI: " . $uri . " -->\n";
-        echo "<!-- Method: " . $requestMethod . " -->\n";
-        echo "<!-- Routes count: " . count($this->routes) . " -->\n";
-
         foreach ($this->routes as $route) {
             if ($route['method'] !== $requestMethod) continue;
 

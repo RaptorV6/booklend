@@ -7,12 +7,6 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// DEBUG: Show what we're getting
-echo "<!-- DEBUG INFO -->\n";
-echo "<!-- REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD'] . " -->\n";
-echo "<!-- REQUEST_URI: " . $_SERVER['REQUEST_URI'] . " -->\n";
-echo "<!-- SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . " -->\n";
-
 // Autoloader (PSR-4 style)
 spl_autoload_register(function ($class) {
     $file = __DIR__ . '/../' . str_replace('\\', '/', $class) . '.php';
@@ -24,8 +18,6 @@ spl_autoload_register(function ($class) {
 // Load config
 require __DIR__ . '/../config.php';
 require __DIR__ . '/../app/helpers.php';
-
-echo "<!-- BASE_URL: " . BASE_URL . " -->\n";
 
 // Start session
 session_start();

@@ -10,7 +10,7 @@
     </div>
 
     <!-- Book Grid -->
-    <div class="book-grid">
+    <div class="book-grid" id="book-grid">
         <?php foreach ($books as $book): ?>
             <div class="book-card">
                 <a href="<?= BASE_URL ?>/kniha/<?= e($book['slug']) ?>">
@@ -34,7 +34,24 @@
             </div>
         <?php endforeach; ?>
     </div>
+
+    <!-- Loading indicator -->
+    <div id="loading-more" style="display: none; text-align: center; padding: 2rem;">
+        <p style="color: var(--text-muted);">Načítání dalších knih...</p>
+    </div>
+
+    <!-- No more books -->
+    <div id="no-more-books" style="display: none; text-align: center; padding: 2rem;">
+        <p style="color: var(--text-muted);">Zobrazeny všechny knihy</p>
+    </div>
 </div>
+
+<script>
+// Initialize infinite scroll
+window.bookCatalogPage = 1;
+window.bookCatalogHasMore = true;
+window.bookCatalogLoading = false;
+</script>
 
 <?php
 $content = ob_get_clean();

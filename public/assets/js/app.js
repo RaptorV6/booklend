@@ -82,6 +82,128 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ════════════════════════════════════════════════════════
+    // Lazy Loading Images
+    // ════════════════════════════════════════════════════════
+
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                const src = img.dataset.src;
+
+                if (src) {
+                    img.src = src;
+                    img.addEventListener('load', () => {
+                        img.classList.add('loaded');
+                    });
+                    observer.unobserve(img);
+                }
+            }
+        });
+    }, {
+        rootMargin: '50px' // Start loading 50px before image enters viewport
+    });
+
+    // Observe all lazy images
+    document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+    });
+
+    // ════════════════════════════════════════════════════════
+    // Infinite Scroll for Book Catalog
+    // ════════════════════════════════════════════════════════
+
+    const bookGrid = document.getElementById('book-grid');
+    const loadingMore = document.getElementById('loading-more');
+    const noMoreBooks = document.getElementById('no-more-books');
+
+    if (bookGrid && loadingMore) {
+        // Infinite scroll observer
+        const loadMoreObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && window.bookCatalogHasMore && !window.bookCatalogLoading) {
+                    loadMoreBooks();
+                }
+            });
+        }, {
+            rootMargin: '200px' // Trigger 200px before reaching bottom
+        });
+
+        // Observe loading indicator
+        loadMoreObserver.observe(loadingMore);
+
+        async function loadMoreBooks() {
+            if (window.bookCatalogLoading || !window.bookCatalogHasMore) return;
+
+            window.bookCatalogLoading = true;
+            window.bookCatalogPage++;
+
+            loadingMore.style.display = 'block';
+
+            try {
+                const response = await fetch(`${getBaseUrl()}/api/books?page=${window.bookCatalogPage}&limit=12`);
+                const data = await response.json();
+
+                if (response.ok && data.books) {
+                    // Add new books to grid
+                    data.books.forEach(book => {
+                        const bookCard = createBookCard(book);
+                        bookGrid.appendChild(bookCard);
+                    });
+
+                    // Observe new lazy images
+                    bookGrid.querySelectorAll('img[data-src]:not(.observing)').forEach(img => {
+                        img.classList.add('observing');
+                        imageObserver.observe(img);
+                    });
+
+                    window.bookCatalogHasMore = data.hasMore;
+
+                    if (!data.hasMore) {
+                        loadingMore.style.display = 'none';
+                        noMoreBooks.style.display = 'block';
+                    }
+                } else {
+                    console.error('Failed to load more books:', data);
+                }
+            } catch (error) {
+                console.error('Error loading more books:', error);
+            } finally {
+                window.bookCatalogLoading = false;
+                if (window.bookCatalogHasMore) {
+                    loadingMore.style.display = 'none';
+                }
+            }
+        }
+
+        function createBookCard(book) {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+
+            const availableBadge = book.available_copies > 0
+                ? `<span class="badge badge-available">Dostupné (${book.available_copies})</span>`
+                : `<span class="badge badge-unavailable">Vypůjčeno</span>`;
+
+            card.innerHTML = `
+                <a href="${getBaseUrl()}/kniha/${escapeHtml(book.slug)}">
+                    <div class="book-cover" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        📖
+                    </div>
+                    <div class="book-info">
+                        <h3 class="book-title">${escapeHtml(book.title)}</h3>
+                        <p class="book-author">${escapeHtml(book.author)}</p>
+                        <div class="book-meta">
+                            ${availableBadge}
+                        </div>
+                    </div>
+                </a>
+            `;
+
+            return card;
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
     // Helpers
     // ════════════════════════════════════════════════════════
 

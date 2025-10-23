@@ -23,7 +23,7 @@ class BookController {
     // ════════════════════════════════════════════════════════
 
     public function catalog(): void {
-        $books = $this->bookModel->getAll(20);
+        $books = $this->bookModel->getAll(12);
 
         $title = 'Katalog knih';
         require __DIR__ . '/../Views/books/catalog.php';
@@ -65,6 +65,27 @@ class BookController {
         jsonResponse(['items' => $books]);
     }
 
+    public function apiGetBooks(): void {
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 12;
+
+        // Validate
+        if ($page < 1) $page = 1;
+        if ($limit < 1 || $limit > 50) $limit = 12;
+
+        $books = $this->bookModel->paginate($page, $limit);
+        $total = $this->bookModel->getTotalCount();
+        $hasMore = ($page * $limit) < $total;
+
+        jsonResponse([
+            'books' => $books,
+            'page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'hasMore' => $hasMore
+        ]);
+    }
+
     // ════════════════════════════════════════════════════════
     // AJAX API
     // ════════════════════════════════════════════════════════
@@ -98,8 +119,8 @@ class BookController {
             $rentalModel->create(Auth::id(), $bookId, 14);
             jsonResponse(['success' => true, 'message' => 'Kniha půjčena']);
         } catch (\Exception $e) {
-            error_log($e->getMessage());
-            jsonResponse(['error' => 'Chyba při půjčování'], 500);
+            error_log("Rent error: " . $e->getMessage());
+            jsonResponse(['error' => 'Chyba při půjčování: ' . $e->getMessage()], 500);
         }
     }
 
@@ -126,8 +147,8 @@ class BookController {
             $rentalModel->returnBook($rentalId);
             jsonResponse(['success' => true, 'message' => 'Kniha vrácena']);
         } catch (\Exception $e) {
-            error_log($e->getMessage());
-            jsonResponse(['error' => 'Chyba při vracení'], 500);
+            error_log("Return error: " . $e->getMessage());
+            jsonResponse(['error' => 'Chyba při vracení: ' . $e->getMessage()], 500);
         }
     }
 }

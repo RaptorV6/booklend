@@ -33,12 +33,20 @@ async function rentBook(bookId) {
             body: JSON.stringify({ book_id: bookId })
         });
 
-        const data = await response.json();
+        // Try to parse JSON response
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            console.error('Failed to parse JSON:', e);
+            data = { error: 'Neplatná odpověď serveru' };
+        }
 
-        if (response.ok) {
-            alert('Kniha byla úspěšně půjčena!');
+        if (response.ok && data.success) {
+            alert(data.message || 'Kniha byla úspěšně půjčena!');
             location.reload();
         } else {
+            console.error('Rent failed:', data);
             alert(data.error || 'Chyba při půjčování knihy');
         }
     } catch (error) {
@@ -64,12 +72,20 @@ async function returnBook(rentalId) {
             body: JSON.stringify({ rental_id: rentalId })
         });
 
-        const data = await response.json();
+        // Try to parse JSON response
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            console.error('Failed to parse JSON:', e);
+            data = { error: 'Neplatná odpověď serveru' };
+        }
 
-        if (response.ok) {
-            alert('Kniha byla úspěšně vrácena!');
+        if (response.ok && data.success) {
+            alert(data.message || 'Kniha byla úspěšně vrácena!');
             location.reload();
         } else {
+            console.error('Return failed:', data);
             alert(data.error || 'Chyba při vracení knihy');
         }
     } catch (error) {
