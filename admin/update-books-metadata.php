@@ -5,15 +5,15 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 set_time_limit(300); // 5 minutes
 
+require __DIR__ . '/../config.php';
+
 // Autoloader
 spl_autoload_register(function ($class) {
-    $file = __DIR__ . '/' . str_replace('\\', '/', $class) . '.php';
+    $file = __DIR__ . '/../' . str_replace('\\', '/', $class) . '.php';
     if (file_exists($file)) {
         require_once $file;
     }
 });
-
-require __DIR__ . '/config.php';
 
 $db = new app\Database(DB_HOST, DB_NAME, DB_USER, DB_PASS);
 $cache = new app\Cache(CACHE_DIR, CACHE_MAX_SIZE_MB, CACHE_MAX_FILES);
