@@ -1,0 +1,26 @@
+# ═══════════════════════════════════════════════════════════
+# BOOKLEND - Git Ignore
+# ═══════════════════════════════════════════════════════════
+
+# Cache files
+/public/cache/*
+!/public/cache/.gitkeep
+
+# Config (if contains sensitive data)
+# config.php
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~

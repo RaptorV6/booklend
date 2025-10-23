@@ -1,0 +1,133 @@
+<?php
+namespace app\Controllers;
+
+use app\Database;
+use app\Cache;
+use app\Models\Book;
+use app\Models\Rental;
+use app\Auth;
+
+class BookController {
+    private Database $db;
+    private Cache $cache;
+    private Book $bookModel;
+
+    public function __construct(Database $db, Cache $cache) {
+        $this->db = $db;
+        $this->cache = $cache;
+        $this->bookModel = new Book($db, $cache);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // PUBLIC PAGES
+    // ════════════════════════════════════════════════════════
+
+    public function catalog(): void {
+        $books = $this->bookModel->getAll(20);
+
+        $title = 'Katalog knih';
+        require __DIR__ . '/../Views/books/catalog.php';
+    }
+
+    public function detail(string $slug): void {
+        // Find book
+        $book = $this->bookModel->getComplete($slug);
+
+        if (!$book) {
+            http_response_code(404);
+            require __DIR__ . '/../Views/errors/404.php';
+            return;
+        }
+
+        // Increment views
+        $this->bookModel->incrementViews($book['id']);
+
+        // Check if user has rented this book
+        $isRented = false;
+        if (Auth::check()) {
+            $rentalModel = new Rental($this->db);
+            $isRented = $rentalModel->isBookRentedByUser(Auth::id(), $book['id']);
+        }
+
+        $title = $book['title'];
+        require __DIR__ . '/../Views/books/detail.php';
+    }
+
+    public function search(): void {
+        $query = $_GET['q'] ?? '';
+
+        if (strlen($query) < 2) {
+            jsonResponse(['items' => []]);
+        }
+
+        $books = $this->bookModel->search($query);
+
+        jsonResponse(['items' => $books]);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // AJAX API
+    // ════════════════════════════════════════════════════════
+
+    public function apiRent(): void {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $bookId = $data['book_id'] ?? null;
+
+        if (!$bookId) {
+            jsonResponse(['error' => 'Book ID required'], 400);
+        }
+
+        $book = $this->bookModel->findById($bookId);
+
+        if (!$book) {
+            jsonResponse(['error' => 'Kniha nenalezena'], 404);
+        }
+
+        if ($book['available_copies'] < 1) {
+            jsonResponse(['error' => 'Kniha není dostupná'], 409);
+        }
+
+        $rentalModel = new Rental($this->db);
+
+        // Check if already rented
+        if ($rentalModel->isBookRentedByUser(Auth::id(), $bookId)) {
+            jsonResponse(['error' => 'Už jste si tuto knihu půjčili'], 409);
+        }
+
+        try {
+            $rentalModel->create(Auth::id(), $bookId, 14);
+            jsonResponse(['success' => true, 'message' => 'Kniha půjčena']);
+        } catch (\Exception $e) {
+            error_log($e->getMessage());
+            jsonResponse(['error' => 'Chyba při půjčování'], 500);
+        }
+    }
+
+    public function apiReturn(): void {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $rentalId = $data['rental_id'] ?? null;
+
+        if (!$rentalId) {
+            jsonResponse(['error' => 'Rental ID required'], 400);
+        }
+
+        $rentalModel = new Rental($this->db);
+        $rental = $rentalModel->findById($rentalId);
+
+        if (!$rental || $rental['user_id'] != Auth::id()) {
+            jsonResponse(['error' => 'Výpůjčka nenalezena'], 404);
+        }
+
+        if ($rental['returned_at']) {
+            jsonResponse(['error' => 'Kniha už byla vrácena'], 409);
+        }
+
+        try {
+            $rentalModel->returnBook($rentalId);
+            jsonResponse(['success' => true, 'message' => 'Kniha vrácena']);
+        } catch (\Exception $e) {
+            error_log($e->getMessage());
+            jsonResponse(['error' => 'Chyba při vracení'], 500);
+        }
+    }
+}
