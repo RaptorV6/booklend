@@ -1,26 +1,24 @@
-# ═══════════════════════════════════════════════════════════
-# BOOKLEND - Git Ignore
-# ═══════════════════════════════════════════════════════════
-
-# Cache files
+# Dependencies & Cache
+/vendor/
 /public/cache/*
 !/public/cache/.gitkeep
 
-# Config (if contains sensitive data)
-# config.php
+# Environment files
+.env
+.env.local
+config-local.php
 
-# IDE
+# IDE files
 .vscode/
 .idea/
-*.sublime-*
+*.swp
+*.swo
+*~
 
-# OS
-.DS_Store
-Thumbs.db
+# Test & Development scripts
+/scripts/
 *.log
 
-# Temporary files
-*.tmp
-*.bak
-*.swp
-*~
+# OS files
+.DS_Store
+Thumbs.db

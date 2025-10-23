@@ -23,7 +23,24 @@ class BookController {
     // ════════════════════════════════════════════════════════
 
     public function catalog(): void {
-        $books = $this->bookModel->getAll(12);
+        // Get pagination parameters
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $perPage = 12;
+
+        // Get books for current page
+        $books = $this->bookModel->paginate($page, $perPage);
+        $totalBooks = $this->bookModel->getTotalCount();
+        $totalPages = (int)ceil($totalBooks / $perPage);
+
+        // Pagination data
+        $pagination = [
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'perPage' => $perPage,
+            'totalBooks' => $totalBooks,
+            'hasNext' => $page < $totalPages,
+            'hasPrev' => $page > 1,
+        ];
 
         $title = 'Katalog knih';
         require __DIR__ . '/../Views/books/catalog.php';

@@ -149,22 +149,10 @@ class Book {
     }
 
     private function callGoogleBooksAPI(string $isbn): ?array {
-        // Note: API key is blocked, using without key for now
-        // To use key: activate Google Books API in Google Cloud Console
         $url = GOOGLE_BOOKS_API . "?q=isbn:{$isbn}";
+        $response = $this->httpGet($url);
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,
-            CURLOPT_FOLLOWLOCATION => true,
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($httpCode !== 200 || !$response) {
+        if (!$response) {
             error_log("Google Books API failed for ISBN: {$isbn}");
             return null;
         }
@@ -295,6 +283,25 @@ class Book {
     // ════════════════════════════════════════════════════════
     // HELPERS
     // ════════════════════════════════════════════════════════
+
+    /**
+     * HTTP GET request helper - DRY principle
+     */
+    private function httpGet(string $url, int $timeout = 5): ?string {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false, // For XAMPP compatibility
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return ($httpCode === 200 && $response) ? $response : null;
+    }
 
     public function getComplete(string $slug): ?array {
         $book = $this->findBySlug($slug);

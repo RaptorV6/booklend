@@ -41,23 +41,67 @@
         <?php endforeach; ?>
     </div>
 
-    <!-- Loading indicator -->
-    <div id="loading-more" style="display: none; text-align: center; padding: 2rem;">
-        <p style="color: var(--text-muted);">Načítání dalších knih...</p>
-    </div>
+    <!-- Pagination -->
+    <?php if ($pagination['totalPages'] > 1): ?>
+        <div class="pagination">
+            <!-- Previous button -->
+            <?php if ($pagination['hasPrev']): ?>
+                <a href="<?= BASE_URL ?>/?page=<?= $pagination['currentPage'] - 1 ?>" class="pagination-btn">
+                    ← Předchozí
+                </a>
+            <?php else: ?>
+                <span class="pagination-btn pagination-disabled">← Předchozí</span>
+            <?php endif; ?>
 
-    <!-- No more books -->
-    <div id="no-more-books" style="display: none; text-align: center; padding: 2rem;">
-        <p style="color: var(--text-muted);">Zobrazeny všechny knihy</p>
-    </div>
+            <!-- Page numbers -->
+            <div class="pagination-pages">
+                <?php
+                $start = max(1, $pagination['currentPage'] - 2);
+                $end = min($pagination['totalPages'], $pagination['currentPage'] + 2);
+
+                // Show first page
+                if ($start > 1): ?>
+                    <a href="<?= BASE_URL ?>/?page=1" class="pagination-page">1</a>
+                    <?php if ($start > 2): ?>
+                        <span class="pagination-dots">...</span>
+                    <?php endif; ?>
+                <?php endif; ?>
+
+                <!-- Page range -->
+                <?php for ($i = $start; $i <= $end; $i++): ?>
+                    <?php if ($i === $pagination['currentPage']): ?>
+                        <span class="pagination-page pagination-active"><?= $i ?></span>
+                    <?php else: ?>
+                        <a href="<?= BASE_URL ?>/?page=<?= $i ?>" class="pagination-page"><?= $i ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <!-- Show last page -->
+                <?php if ($end < $pagination['totalPages']): ?>
+                    <?php if ($end < $pagination['totalPages'] - 1): ?>
+                        <span class="pagination-dots">...</span>
+                    <?php endif; ?>
+                    <a href="<?= BASE_URL ?>/?page=<?= $pagination['totalPages'] ?>" class="pagination-page"><?= $pagination['totalPages'] ?></a>
+                <?php endif; ?>
+            </div>
+
+            <!-- Next button -->
+            <?php if ($pagination['hasNext']): ?>
+                <a href="<?= BASE_URL ?>/?page=<?= $pagination['currentPage'] + 1 ?>" class="pagination-btn">
+                    Další →
+                </a>
+            <?php else: ?>
+                <span class="pagination-btn pagination-disabled">Další →</span>
+            <?php endif; ?>
+        </div>
+
+        <!-- Pagination info -->
+        <div class="pagination-info">
+            Zobrazeno <?= min($pagination['perPage'], $pagination['totalBooks']) ?> z <?= $pagination['totalBooks'] ?> knih
+            (Stránka <?= $pagination['currentPage'] ?> z <?= $pagination['totalPages'] ?>)
+        </div>
+    <?php endif; ?>
 </div>
-
-<script>
-// Initialize infinite scroll
-window.bookCatalogPage = 1;
-window.bookCatalogHasMore = true;
-window.bookCatalogLoading = false;
-</script>
 
 <?php
 $content = ob_get_clean();
