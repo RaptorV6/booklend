@@ -3,65 +3,72 @@
 <div class="container">
     <h1 class="page-title">Katalog knih</h1>
 
-    <!-- Search & Filter Bar -->
+    <!-- Search Bar -->
     <div class="catalog-controls">
-        <div class="search-and-filter">
-            <!-- Search Box -->
-            <div class="search-box">
-                <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <input type="text" id="search-input" placeholder="Hledat knihu..." autocomplete="off">
-                <div id="search-results"></div>
-            </div>
-
-            <!-- Filter Button -->
-            <button class="filter-toggle-btn" id="filter-toggle">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                Filtry
-                <span class="filter-count" id="filter-count" style="display: none;">1</span>
-            </button>
+        <!-- Search Box -->
+        <div class="search-box">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <input type="text" id="search-input" placeholder="Hledat knihu..." autocomplete="off">
+            <div id="search-results"></div>
         </div>
 
-        <!-- Filter Dropdown -->
-        <div class="filter-dropdown" id="filter-dropdown">
-            <div class="filter-section">
-                <h3 class="filter-title">Žánr</h3>
-                <div class="filter-options">
-                    <label class="filter-option">
-                        <input type="radio" name="genre" value="" <?= !$genre ? 'checked' : '' ?>>
-                        <span>Vše</span>
-                        <span class="option-count"><?= $pagination['totalBooks'] ?></span>
-                    </label>
-                    <?php foreach ($genres as $g): ?>
-                        <label class="filter-option">
-                            <input type="radio" name="genre" value="<?= e($g['genre']) ?>" <?= ($genre === $g['genre']) ? 'checked' : '' ?>>
-                            <span><?= e($g['genre']) ?></span>
-                            <span class="option-count"><?= $g['count'] ?></span>
-                        </label>
-                    <?php endforeach; ?>
+        <!-- Filter Chips -->
+        <div class="filter-chips">
+            <!-- Genre Filter Chip -->
+            <div class="filter-chip-wrapper">
+                <button class="filter-chip" id="genre-chip">
+                    <span>Žánr</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="chip-badge" id="genre-badge" style="display: none;">0</span>
+                </button>
+
+                <!-- Genre Dropdown -->
+                <div class="chip-dropdown" id="genre-dropdown">
+                    <div class="chip-dropdown-header">
+                        <h3>Vyberte žánry</h3>
+                        <button class="chip-clear" data-filter="genre">Vymazat</button>
+                    </div>
+                    <div class="chip-dropdown-content">
+                        <?php foreach ($genres as $g): ?>
+                            <label class="chip-option">
+                                <input type="checkbox" name="genres[]" value="<?= e($g['genre']) ?>" <?= ($genre === $g['genre']) ? 'checked' : '' ?>>
+                                <span><?= e($g['genre']) ?></span>
+                                <span class="option-count"><?= $g['count'] ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="chip-dropdown-footer">
+                        <button class="chip-apply" data-filter="genre">Použít</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Future filters can be added here -->
+            <!-- Future: Date Filter Chip -->
             <!--
-            <div class="filter-section">
-                <h3 class="filter-title">Rok vydání</h3>
-                <div class="filter-options">
-                    <label class="filter-option">
-                        <input type="checkbox" name="year" value="2024">
-                        <span>2024</span>
-                    </label>
+            <div class="filter-chip-wrapper">
+                <button class="filter-chip" id="date-chip">
+                    <span>Datum vydání</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="chip-dropdown" id="date-dropdown">
+                    <div class="chip-dropdown-content">
+                        <label class="chip-option">
+                            <input type="checkbox" name="years[]" value="2024">
+                            <span>2024</span>
+                        </label>
+                    </div>
                 </div>
             </div>
             -->
 
-            <div class="filter-actions">
-                <button class="filter-clear-btn" id="filter-clear">Vymazat</button>
-                <button class="filter-apply-btn" id="filter-apply">Použít</button>
-            </div>
+            <!-- Active Filters Display -->
+            <div class="active-filters" id="active-filters"></div>
         </div>
     </div>
 
@@ -283,59 +290,74 @@ const LazyLoadController = {
     },
 
     setupFilterDropdown() {
-        const toggleBtn = document.getElementById('filter-toggle');
-        const dropdown = document.getElementById('filter-dropdown');
-        const applyBtn = document.getElementById('filter-apply');
-        const clearBtn = document.getElementById('filter-clear');
-        const filterCount = document.getElementById('filter-count');
+        // Genre Chip
+        const genreChip = document.getElementById('genre-chip');
+        const genreDropdown = document.getElementById('genre-dropdown');
+        const genreBadge = document.getElementById('genre-badge');
+        const genreApplyBtn = genreDropdown?.querySelector('.chip-apply');
+        const genreClearBtn = genreDropdown?.querySelector('.chip-clear');
 
-        // Toggle dropdown
-        toggleBtn?.addEventListener('click', (e) => {
+        // Toggle genre dropdown
+        genreChip?.addEventListener('click', (e) => {
             e.stopPropagation();
-            dropdown.classList.toggle('active');
+            genreDropdown.classList.toggle('active');
+            genreChip.classList.toggle('active');
         });
 
-        // Close dropdown when clicking outside
+        // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
-            if (!dropdown.contains(e.target) && e.target !== toggleBtn) {
-                dropdown.classList.remove('active');
+            const isChip = e.target.closest('.filter-chip');
+            const isDropdown = e.target.closest('.chip-dropdown');
+
+            if (!isChip && !isDropdown) {
+                document.querySelectorAll('.chip-dropdown').forEach(d => d.classList.remove('active'));
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
             }
         });
 
-        // Apply filters
-        applyBtn?.addEventListener('click', () => {
-            const selectedGenre = document.querySelector('input[name="genre"]:checked')?.value;
+        // Apply genre filters
+        genreApplyBtn?.addEventListener('click', () => {
+            const selectedGenres = Array.from(
+                genreDropdown.querySelectorAll('input[name="genres[]"]:checked')
+            ).map(cb => cb.value);
 
-            // Build URL with filters
-            const url = selectedGenre
-                ? `<?= BASE_URL ?>/?genre=${encodeURIComponent(selectedGenre)}`
+            // Build URL with filters (for now just use first genre)
+            // TODO: Backend support for multiple genres
+            const url = selectedGenres.length > 0
+                ? `<?= BASE_URL ?>/?genre=${encodeURIComponent(selectedGenres[0])}`
                 : '<?= BASE_URL ?>/';
 
             window.location.href = url;
         });
 
-        // Clear filters
-        clearBtn?.addEventListener('click', () => {
-            // Reset all radio buttons to "Vše"
-            document.querySelector('input[name="genre"][value=""]').checked = true;
-
-            // Redirect to base URL
-            window.location.href = '<?= BASE_URL ?>/';
+        // Clear genre filters
+        genreClearBtn?.addEventListener('click', () => {
+            genreDropdown.querySelectorAll('input[name="genres[]"]').forEach(cb => {
+                cb.checked = false;
+            });
+            this.updateGenreBadge();
         });
 
-        // Update filter count badge
-        this.updateFilterCount();
+        // Update badge on checkbox change
+        genreDropdown?.querySelectorAll('input[name="genres[]"]').forEach(cb => {
+            cb.addEventListener('change', () => this.updateGenreBadge());
+        });
+
+        // Initialize badge
+        this.updateGenreBadge();
     },
 
-    updateFilterCount() {
-        const selectedGenre = document.querySelector('input[name="genre"]:checked')?.value;
-        const filterCount = document.getElementById('filter-count');
+    updateGenreBadge() {
+        const genreDropdown = document.getElementById('genre-dropdown');
+        const genreBadge = document.getElementById('genre-badge');
 
-        if (selectedGenre) {
-            filterCount.textContent = '1';
-            filterCount.style.display = 'inline-block';
+        const selectedCount = genreDropdown?.querySelectorAll('input[name="genres[]"]:checked').length || 0;
+
+        if (selectedCount > 0) {
+            genreBadge.textContent = selectedCount;
+            genreBadge.style.display = 'inline-block';
         } else {
-            filterCount.style.display = 'none';
+            genreBadge.style.display = 'none';
         }
     },
 
