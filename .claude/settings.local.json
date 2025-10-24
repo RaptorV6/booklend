@@ -1,16 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir:*)",
-      "Bash(tree:*)",
-      "Bash(php -l:*)",
-      "Bash(php clear-cache.php:*)",
-      "Bash(/c/xampp/php/php.exe:*)",
-      "Bash(curl:*)",
-      "Bash(1)",
-      "Bash(awk:*)"
-    ],
-    "deny": [],
-    "ask": []
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "WebFetch",
+      "Grep",
+      "Glob",
+      "LS",
+      "MultiEdit",
+      "NotebookRead",
+      "NotebookEdit",
+      "TodoRead",
+      "TodoWrite",
+      "WebSearch",
+      "Bash(timeout 180 ./php.exe:*)",
+      "Bash(timeout 120 /c/xampp/php/php.exe:*)"
+    ]
   }
 }

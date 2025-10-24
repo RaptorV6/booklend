@@ -220,6 +220,9 @@ class Book {
                 // Remove existing zoom parameter and add zoom=0 for highest quality
                 $thumbnail = preg_replace('/[&?]zoom=\d+/', '', $thumbnail);
                 $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=0';
+
+                // Convert HTTP to HTTPS to avoid mixed content warnings in browsers
+                $thumbnail = str_replace('http://', 'https://', $thumbnail);
             }
         }
 
