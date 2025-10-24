@@ -53,8 +53,18 @@ class Book {
         );
     }
 
-    public function paginate(int $page = 1, int $perPage = 20): array {
+    public function paginate(int $page = 1, int $perPage = 20, ?string $genre = null): array {
         $offset = ($page - 1) * $perPage;
+
+        if ($genre) {
+            return $this->db->fetchAll(
+                "SELECT * FROM books
+                 WHERE deleted_at IS NULL AND genre = ?
+                 ORDER BY title ASC
+                 LIMIT ? OFFSET ?",
+                [$genre, $perPage, $offset]
+            );
+        }
 
         return $this->db->fetchAll(
             "SELECT * FROM books
@@ -65,9 +75,26 @@ class Book {
         );
     }
 
-    public function getTotalCount(): int {
-        $result = $this->db->fetch("SELECT COUNT(*) as total FROM books WHERE deleted_at IS NULL");
+    public function getTotalCount(?string $genre = null): int {
+        if ($genre) {
+            $result = $this->db->fetch(
+                "SELECT COUNT(*) as total FROM books WHERE deleted_at IS NULL AND genre = ?",
+                [$genre]
+            );
+        } else {
+            $result = $this->db->fetch("SELECT COUNT(*) as total FROM books WHERE deleted_at IS NULL");
+        }
         return $result['total'] ?? 0;
+    }
+
+    public function getGenres(): array {
+        return $this->db->fetchAll(
+            "SELECT genre, COUNT(*) as count
+             FROM books
+             WHERE deleted_at IS NULL
+             GROUP BY genre
+             ORDER BY count DESC"
+        );
     }
 
     public function incrementViews(int $id): void {

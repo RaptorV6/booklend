@@ -25,11 +25,15 @@ class BookController {
     public function catalog(): void {
         // Get pagination parameters
         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $genre = isset($_GET['genre']) ? $_GET['genre'] : null;
         $perPage = 12;
 
+        // Get genres for filter
+        $genres = $this->bookModel->getGenres();
+
         // Get books for current page
-        $books = $this->bookModel->paginate($page, $perPage);
-        $totalBooks = $this->bookModel->getTotalCount();
+        $books = $this->bookModel->paginate($page, $perPage, $genre);
+        $totalBooks = $this->bookModel->getTotalCount($genre);
         $totalPages = (int)ceil($totalBooks / $perPage);
 
         // Pagination data
@@ -85,13 +89,14 @@ class BookController {
     public function apiGetBooks(): void {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 12;
+        $genre = isset($_GET['genre']) ? $_GET['genre'] : null;
 
         // Validate
         if ($page < 1) $page = 1;
         if ($limit < 1 || $limit > 50) $limit = 12;
 
-        $books = $this->bookModel->paginate($page, $limit);
-        $total = $this->bookModel->getTotalCount();
+        $books = $this->bookModel->paginate($page, $limit, $genre);
+        $total = $this->bookModel->getTotalCount($genre);
         $hasMore = ($page * $limit) < $total;
 
         jsonResponse([
@@ -99,7 +104,8 @@ class BookController {
             'page' => $page,
             'limit' => $limit,
             'total' => $total,
-            'hasMore' => $hasMore
+            'hasMore' => $hasMore,
+            'genre' => $genre
         ]);
     }
 
