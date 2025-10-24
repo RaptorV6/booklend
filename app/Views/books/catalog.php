@@ -3,7 +3,7 @@
 <div class="container">
     <h1 class="page-title">Katalog knih</h1>
 
-    <!-- Search Bar -->
+    <!-- Search & Filters -->
     <div class="catalog-controls">
         <!-- Search Box -->
         <div class="search-box">
@@ -35,7 +35,7 @@
                     <div class="chip-dropdown-content">
                         <?php foreach ($genres as $g): ?>
                             <label class="chip-option">
-                                <input type="checkbox" name="genres[]" value="<?= e($g['genre']) ?>" <?= ($genre === $g['genre']) ? 'checked' : '' ?>>
+                                <input type="checkbox" name="genres[]" value="<?= e($g['genre']) ?>" <?= (isset($currentFilters['genre']) && $currentFilters['genre'] === $g['genre']) ? 'checked' : '' ?>>
                                 <span><?= e($g['genre']) ?></span>
                                 <span class="option-count"><?= $g['count'] ?></span>
                             </label>
@@ -47,29 +47,81 @@
                 </div>
             </div>
 
-            <!-- Future: Date Filter Chip -->
-            <!--
+            <!-- Year Filter Chip -->
             <div class="filter-chip-wrapper">
-                <button class="filter-chip" id="date-chip">
-                    <span>Datum vydání</span>
+                <button class="filter-chip" id="year-chip">
+                    <span>Rok vydání</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="chip-badge" id="year-badge">0</span>
+                </button>
+
+                <div class="chip-dropdown" id="year-dropdown">
+                    <div class="chip-dropdown-header">
+                        <h3>Rok vydání</h3>
+                        <button class="chip-clear" data-filter="year">Vymazat</button>
+                    </div>
+                    <div class="chip-dropdown-content">
+                        <?php if (!empty($years)): ?>
+                            <?php foreach ($years as $y): ?>
+                                <label class="chip-option">
+                                    <input type="checkbox" name="years[]" value="<?= $y['year'] ?>" <?= (isset($currentFilters['year']) && (int)$currentFilters['year'] === (int)$y['year']) ? 'checked' : '' ?>>
+                                    <span><?= $y['year'] ?></span>
+                                    <span class="option-count"><?= $y['count'] ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p style="padding: 12px; color: var(--text-muted); text-align: center;">Žádné roky k dispozici</p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="chip-dropdown-footer">
+                        <button class="chip-apply" data-filter="year">Použít</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sort Filter Chip -->
+            <div class="filter-chip-wrapper">
+                <button class="filter-chip" id="sort-chip">
+                    <span>Řadit podle</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
-                <div class="chip-dropdown" id="date-dropdown">
+
+                <div class="chip-dropdown" id="sort-dropdown">
+                    <div class="chip-dropdown-header">
+                        <h3>Seřadit podle</h3>
+                    </div>
                     <div class="chip-dropdown-content">
+                        <?php $currentSort = $currentFilters['sort'] ?? 'title-asc'; ?>
                         <label class="chip-option">
-                            <input type="checkbox" name="years[]" value="2024">
-                            <span>2024</span>
+                            <input type="radio" name="sort" value="title-asc" <?= $currentSort === 'title-asc' ? 'checked' : '' ?>>
+                            <span>Název (A-Z)</span>
                         </label>
+                        <label class="chip-option">
+                            <input type="radio" name="sort" value="title-desc" <?= $currentSort === 'title-desc' ? 'checked' : '' ?>>
+                            <span>Název (Z-A)</span>
+                        </label>
+                        <label class="chip-option">
+                            <input type="radio" name="sort" value="author-asc" <?= $currentSort === 'author-asc' ? 'checked' : '' ?>>
+                            <span>Autor (A-Z)</span>
+                        </label>
+                        <label class="chip-option">
+                            <input type="radio" name="sort" value="author-desc" <?= $currentSort === 'author-desc' ? 'checked' : '' ?>>
+                            <span>Autor (Z-A)</span>
+                        </label>
+                    </div>
+                    <div class="chip-dropdown-footer">
+                        <button class="chip-apply" data-filter="sort">Použít</button>
                     </div>
                 </div>
             </div>
-            -->
-
-            <!-- Active Filters Display -->
-            <div class="active-filters" id="active-filters"></div>
         </div>
+
+        <!-- Active Filters Display (separate row) -->
+        <div class="active-filters" id="active-filters"></div>
     </div>
 
     <!-- Book Grid -->
@@ -84,7 +136,7 @@
                                 alt="<?= e($book['title']) ?>"
                                 loading="lazy"
                                 onload="this.classList.add('loaded'); this.style.opacity='1'; const loader = this.parentElement.querySelector('.book-loading'); if(loader) loader.classList.add('hidden');"
-                                style="width: 100%; height: 280px; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
+                                style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
                             >
                             <!-- Loading Animation -->
                             <div class="book-loading">
@@ -193,9 +245,22 @@ const LazyLoadController = {
 
         try {
             const nextPage = this.currentPage + 1;
-            const url = `<?= BASE_URL ?>/api/books?page=${nextPage}&limit=12${this.currentGenre ? `&genre=${encodeURIComponent(this.currentGenre)}` : ''}`;
 
-            const response = await fetch(url);
+            // Build URL with all current filters from URL params
+            const currentUrl = new URL(window.location.href);
+            const apiUrl = new URL('<?= BASE_URL ?>/api/books');
+            apiUrl.searchParams.set('page', nextPage);
+            apiUrl.searchParams.set('limit', 12);
+
+            // Copy all filter params from current URL
+            ['genre', 'year', 'sort'].forEach(param => {
+                const value = currentUrl.searchParams.get(param);
+                if (value) {
+                    apiUrl.searchParams.set(param, value);
+                }
+            });
+
+            const response = await fetch(apiUrl);
             const data = await response.json();
 
             if (data.books && data.books.length > 0) {
@@ -242,7 +307,7 @@ const LazyLoadController = {
                     alt="${this.escapeHtml(book.title)}"
                     loading="lazy"
                     onload="this.classList.add('loaded'); this.style.opacity='1'; const loader = this.parentElement.querySelector('.book-loading'); if(loader) loader.classList.add('hidden');"
-                    style="width: 100%; height: 280px; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
+                    style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
                 >
                 <div class="book-loading">
                     <div class="book-loading-animation">
@@ -297,11 +362,55 @@ const LazyLoadController = {
         const genreApplyBtn = genreDropdown?.querySelector('.chip-apply');
         const genreClearBtn = genreDropdown?.querySelector('.chip-clear');
 
+        // Year Chip
+        const yearChip = document.getElementById('year-chip');
+        const yearDropdown = document.getElementById('year-dropdown');
+        const yearBadge = document.getElementById('year-badge');
+        const yearApplyBtn = yearDropdown?.querySelector('.chip-apply');
+        const yearClearBtn = yearDropdown?.querySelector('.chip-clear');
+
+        // Sort Chip
+        const sortChip = document.getElementById('sort-chip');
+        const sortDropdown = document.getElementById('sort-dropdown');
+        const sortApplyBtn = sortDropdown?.querySelector('.chip-apply');
+
         // Toggle genre dropdown
         genreChip?.addEventListener('click', (e) => {
             e.stopPropagation();
+            // Close other dropdowns
+            yearDropdown?.classList.remove('active');
+            yearChip?.classList.remove('active');
+            sortDropdown?.classList.remove('active');
+            sortChip?.classList.remove('active');
+            // Toggle this one
             genreDropdown.classList.toggle('active');
             genreChip.classList.toggle('active');
+        });
+
+        // Toggle year dropdown
+        yearChip?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close other dropdowns
+            genreDropdown?.classList.remove('active');
+            genreChip?.classList.remove('active');
+            sortDropdown?.classList.remove('active');
+            sortChip?.classList.remove('active');
+            // Toggle this one
+            yearDropdown.classList.toggle('active');
+            yearChip.classList.toggle('active');
+        });
+
+        // Toggle sort dropdown
+        sortChip?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close other dropdowns
+            genreDropdown?.classList.remove('active');
+            genreChip?.classList.remove('active');
+            yearDropdown?.classList.remove('active');
+            yearChip?.classList.remove('active');
+            // Toggle this one
+            sortDropdown.classList.toggle('active');
+            sortChip.classList.toggle('active');
         });
 
         // Close dropdowns when clicking outside
@@ -317,17 +426,7 @@ const LazyLoadController = {
 
         // Apply genre filters
         genreApplyBtn?.addEventListener('click', () => {
-            const selectedGenres = Array.from(
-                genreDropdown.querySelectorAll('input[name="genres[]"]:checked')
-            ).map(cb => cb.value);
-
-            // Build URL with filters (for now just use first genre)
-            // TODO: Backend support for multiple genres
-            const url = selectedGenres.length > 0
-                ? `<?= BASE_URL ?>/?genre=${encodeURIComponent(selectedGenres[0])}`
-                : '<?= BASE_URL ?>/';
-
-            window.location.href = url;
+            this.applyFilters();
         });
 
         // Clear genre filters
@@ -345,6 +444,61 @@ const LazyLoadController = {
 
         // Initialize badge
         this.updateGenreBadge();
+
+        // Apply year filters
+        yearApplyBtn?.addEventListener('click', () => {
+            this.applyFilters();
+        });
+
+        // Clear year filters
+        yearClearBtn?.addEventListener('click', () => {
+            yearDropdown.querySelectorAll('input[name="years[]"]').forEach(cb => {
+                cb.checked = false;
+            });
+            this.updateYearBadge();
+        });
+
+        // Update year badge on checkbox change
+        yearDropdown?.querySelectorAll('input[name="years[]"]').forEach(cb => {
+            cb.addEventListener('change', () => this.updateYearBadge());
+        });
+
+        // Initialize year badge
+        this.updateYearBadge();
+
+        // Apply sort
+        sortApplyBtn?.addEventListener('click', () => {
+            this.applyFilters();
+        });
+    },
+
+    applyFilters() {
+        const url = new URL(window.location.href);
+        url.search = ''; // Clear existing params
+
+        // Genre filter (only first selected for now)
+        const selectedGenres = Array.from(
+            document.querySelectorAll('input[name="genres[]"]:checked')
+        ).map(cb => cb.value);
+        if (selectedGenres.length > 0) {
+            url.searchParams.set('genre', selectedGenres[0]);
+        }
+
+        // Year filter (only first selected)
+        const selectedYears = Array.from(
+            document.querySelectorAll('input[name="years[]"]:checked')
+        ).map(cb => cb.value);
+        if (selectedYears.length > 0) {
+            url.searchParams.set('year', selectedYears[0]);
+        }
+
+        // Sort filter
+        const selectedSort = document.querySelector('input[name="sort"]:checked')?.value;
+        if (selectedSort && selectedSort !== 'title-asc') { // Don't add default
+            url.searchParams.set('sort', selectedSort);
+        }
+
+        window.location.href = url.toString();
     },
 
     updateGenreBadge() {
@@ -358,6 +512,20 @@ const LazyLoadController = {
             genreBadge.style.display = 'inline-block';
         } else {
             genreBadge.style.display = 'none';
+        }
+    },
+
+    updateYearBadge() {
+        const yearDropdown = document.getElementById('year-dropdown');
+        const yearBadge = document.getElementById('year-badge');
+
+        const selectedCount = yearDropdown?.querySelectorAll('input[name="years[]"]:checked').length || 0;
+
+        if (selectedCount > 0) {
+            yearBadge.textContent = selectedCount;
+            yearBadge.style.display = 'inline-block';
+        } else {
+            yearBadge.style.display = 'none';
         }
     },
 

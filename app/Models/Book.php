@@ -53,37 +53,85 @@ class Book {
         );
     }
 
-    public function paginate(int $page = 1, int $perPage = 20, ?string $genre = null): array {
+    public function paginate(int $page = 1, int $perPage = 20, array $filters = []): array {
         $offset = ($page - 1) * $perPage;
 
-        if ($genre) {
-            return $this->db->fetchAll(
-                "SELECT * FROM books
-                 WHERE deleted_at IS NULL AND genre = ?
-                 ORDER BY title ASC
-                 LIMIT ? OFFSET ?",
-                [$genre, $perPage, $offset]
-            );
+        // Build WHERE clause
+        $where = ["deleted_at IS NULL"];
+        $params = [];
+
+        // Genre filter
+        if (!empty($filters['genre'])) {
+            $where[] = "genre = ?";
+            $params[] = $filters['genre'];
         }
+
+        // Published year filter
+        if (!empty($filters['year'])) {
+            $where[] = "published_year = ?";
+            $params[] = (int)$filters['year'];
+        }
+
+        // Build ORDER BY clause
+        $orderBy = "title ASC"; // default
+        if (!empty($filters['sort'])) {
+            switch ($filters['sort']) {
+                case 'title-asc':
+                    $orderBy = "title ASC";
+                    break;
+                case 'title-desc':
+                    $orderBy = "title DESC";
+                    break;
+                case 'author-asc':
+                    $orderBy = "author ASC";
+                    break;
+                case 'author-desc':
+                    $orderBy = "author DESC";
+                    break;
+                case 'year-asc':
+                    $orderBy = "published_year ASC";
+                    break;
+                case 'year-desc':
+                    $orderBy = "published_year DESC";
+                    break;
+            }
+        }
+
+        $whereClause = implode(" AND ", $where);
+        $params[] = $perPage;
+        $params[] = $offset;
 
         return $this->db->fetchAll(
             "SELECT * FROM books
-             WHERE deleted_at IS NULL
-             ORDER BY title ASC
+             WHERE {$whereClause}
+             ORDER BY {$orderBy}
              LIMIT ? OFFSET ?",
-            [$perPage, $offset]
+            $params
         );
     }
 
-    public function getTotalCount(?string $genre = null): int {
-        if ($genre) {
-            $result = $this->db->fetch(
-                "SELECT COUNT(*) as total FROM books WHERE deleted_at IS NULL AND genre = ?",
-                [$genre]
-            );
-        } else {
-            $result = $this->db->fetch("SELECT COUNT(*) as total FROM books WHERE deleted_at IS NULL");
+    public function getTotalCount(array $filters = []): int {
+        // Build WHERE clause (same as paginate)
+        $where = ["deleted_at IS NULL"];
+        $params = [];
+
+        if (!empty($filters['genre'])) {
+            $where[] = "genre = ?";
+            $params[] = $filters['genre'];
         }
+
+        if (!empty($filters['year'])) {
+            $where[] = "published_year = ?";
+            $params[] = (int)$filters['year'];
+        }
+
+        $whereClause = implode(" AND ", $where);
+
+        $result = $this->db->fetch(
+            "SELECT COUNT(*) as total FROM books WHERE {$whereClause}",
+            $params
+        );
+
         return $result['total'] ?? 0;
     }
 
@@ -94,6 +142,16 @@ class Book {
              WHERE deleted_at IS NULL
              GROUP BY genre
              ORDER BY count DESC"
+        );
+    }
+
+    public function getPublishedYears(): array {
+        return $this->db->fetchAll(
+            "SELECT published_year as year, COUNT(*) as count
+             FROM books
+             WHERE deleted_at IS NULL AND published_year IS NOT NULL
+             GROUP BY published_year
+             ORDER BY published_year DESC"
         );
     }
 

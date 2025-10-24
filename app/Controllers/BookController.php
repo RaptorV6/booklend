@@ -25,15 +25,27 @@ class BookController {
     public function catalog(): void {
         // Get pagination parameters
         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $genre = isset($_GET['genre']) ? $_GET['genre'] : null;
         $perPage = 12;
 
-        // Get genres for filter
+        // Build filters array from query parameters
+        $filters = [];
+        if (!empty($_GET['genre'])) {
+            $filters['genre'] = $_GET['genre'];
+        }
+        if (!empty($_GET['year'])) {
+            $filters['year'] = (int)$_GET['year'];
+        }
+        if (!empty($_GET['sort'])) {
+            $filters['sort'] = $_GET['sort'];
+        }
+
+        // Get filter options
         $genres = $this->bookModel->getGenres();
+        $years = $this->bookModel->getPublishedYears();
 
         // Get books for current page
-        $books = $this->bookModel->paginate($page, $perPage, $genre);
-        $totalBooks = $this->bookModel->getTotalCount($genre);
+        $books = $this->bookModel->paginate($page, $perPage, $filters);
+        $totalBooks = $this->bookModel->getTotalCount($filters);
         $totalPages = (int)ceil($totalBooks / $perPage);
 
         // Pagination data
@@ -45,6 +57,9 @@ class BookController {
             'hasNext' => $page < $totalPages,
             'hasPrev' => $page > 1,
         ];
+
+        // Current filters for frontend
+        $currentFilters = $filters;
 
         $title = 'Katalog knih';
         require __DIR__ . '/../Views/books/catalog.php';
@@ -89,14 +104,25 @@ class BookController {
     public function apiGetBooks(): void {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 12;
-        $genre = isset($_GET['genre']) ? $_GET['genre'] : null;
 
         // Validate
         if ($page < 1) $page = 1;
         if ($limit < 1 || $limit > 50) $limit = 12;
 
-        $books = $this->bookModel->paginate($page, $limit, $genre);
-        $total = $this->bookModel->getTotalCount($genre);
+        // Build filters from query parameters
+        $filters = [];
+        if (!empty($_GET['genre'])) {
+            $filters['genre'] = $_GET['genre'];
+        }
+        if (!empty($_GET['year'])) {
+            $filters['year'] = (int)$_GET['year'];
+        }
+        if (!empty($_GET['sort'])) {
+            $filters['sort'] = $_GET['sort'];
+        }
+
+        $books = $this->bookModel->paginate($page, $limit, $filters);
+        $total = $this->bookModel->getTotalCount($filters);
         $hasMore = ($page * $limit) < $total;
 
         jsonResponse([
@@ -105,7 +131,7 @@ class BookController {
             'limit' => $limit,
             'total' => $total,
             'hasMore' => $hasMore,
-            'genre' => $genre
+            'filters' => $filters
         ]);
     }
 
