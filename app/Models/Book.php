@@ -174,59 +174,16 @@ class Book {
             return $cached;
         }
 
-        // Hybrid approach: Get best of both APIs
-        // - Open Library: Better quality images (when available)
-        // - Google Books: Descriptions, metadata
+        // Use Google Books API only (has everything: high-res images + Czech descriptions)
         error_log("Fetching metadata for ISBN: {$isbn}");
 
-        $openLibData = $this->callOpenLibraryAPI($isbn);
         $googleData = $this->callGoogleBooksAPI($isbn);
 
-        // Combine: prefer Open Library image, Google Books description
-        $combined = [
-            'title' => null,
-            'authors' => null,
-            'description' => null,
-            'thumbnail' => null,
-            'published_date' => null,
-            'page_count' => null,
-            'source' => null,
-        ];
-
-        // Prefer Open Library thumbnail (better quality)
-        if ($openLibData && !empty($openLibData['thumbnail'])) {
-            $combined['thumbnail'] = $openLibData['thumbnail'];
-            $combined['source'] = 'Open Library (image)';
-            error_log("  ✓ Open Library: Using thumbnail");
-        }
-
-        // Get description and metadata from Google Books
-        if ($googleData) {
-            if (empty($combined['thumbnail']) && !empty($googleData['thumbnail'])) {
-                $combined['thumbnail'] = $googleData['thumbnail'];
-                $combined['source'] = 'Google Books';
-                error_log("  ✓ Google Books: Using thumbnail");
-            }
-
-            // Always prefer Google Books description (Open Library usually has none)
-            $combined['title'] = $googleData['title'] ?? $combined['title'];
-            $combined['authors'] = $googleData['authors'] ?? $combined['authors'];
-            $combined['description'] = $googleData['description'] ?? $combined['description'];
-            $combined['published_date'] = $googleData['published_date'] ?? $combined['published_date'];
-            $combined['page_count'] = $googleData['page_count'] ?? $combined['page_count'];
-
-            if (!empty($googleData['description'])) {
-                error_log("  ✓ Google Books: Found description (" . strlen($googleData['description']) . " chars)");
-                if ($combined['source'] === 'Open Library (image)') {
-                    $combined['source'] = 'Hybrid (OL image + GB data)';
-                }
-            }
-        }
-
-        // Only cache if we have at least a thumbnail
-        if (!empty($combined['thumbnail'])) {
-            $this->cache->set($cacheKey, $combined, CACHE_TTL);
-            return $combined;
+        if ($googleData && !empty($googleData['thumbnail'])) {
+            // Cache and return
+            $this->cache->set($cacheKey, $googleData, CACHE_TTL);
+            error_log("  ✓ Google Books: Found metadata with thumbnail");
+            return $googleData;
         }
 
         error_log("  ✗ No metadata found");
@@ -318,54 +275,13 @@ class Book {
             'thumbnail' => $thumbnail,
             'published_date' => $book['publishedDate'] ?? null,
             'page_count' => $book['pageCount'] ?? null,
+            'source' => 'Google Books (zoom=0)',
         ];
 
         // DEBUG: Log final result
         error_log("Final metadata: " . json_encode($result));
 
         return $result;
-    }
-
-    private function callOpenLibraryAPI(string $isbn): ?array {
-        // Open Library Direct Cover URL (much faster and more reliable than API)
-        // Format: https://covers.openlibrary.org/b/isbn/{ISBN}-L.jpg
-        // They return a default 1x1 pixel (43 bytes) image if cover doesn't exist
-        // We'll download first 100 bytes to check if it's a real cover
-
-        $coverUrl = OPEN_LIBRARY_COVERS . "/{$isbn}-L.jpg";
-
-        $ch = curl_init($coverUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 3,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_RANGE => '0-99', // Download only first 100 bytes
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $responseSize = curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD);
-        curl_close($ch);
-
-        // HTTP 206 = Partial Content (success)
-        // HTTP 200 = Full file (also success, if file is < 100 bytes)
-        // Real covers are always > 43 bytes (1x1 pixel default image)
-        if (($httpCode === 206 || $httpCode === 200) && $responseSize > 50) {
-            error_log("Open Library: Found cover for ISBN: {$isbn} ({$responseSize} bytes sample)");
-
-            return [
-                'title' => null,
-                'authors' => null,
-                'description' => null,
-                'thumbnail' => $coverUrl,
-                'published_date' => null,
-                'page_count' => null,
-            ];
-        }
-
-        error_log("Open Library: No cover for ISBN: {$isbn} (HTTP: {$httpCode}, Size: {$responseSize} bytes)");
-        return null;
     }
 
     // ════════════════════════════════════════════════════════
