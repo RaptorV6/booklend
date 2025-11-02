@@ -9,10 +9,12 @@ use app\Auth;
 class AuthController {
     private Database $db;
     private Cache $cache;
+    private User $userModel;
 
     public function __construct(Database $db, Cache $cache) {
         $this->db = $db;
         $this->cache = $cache;
+        $this->userModel = new User($db);
     }
 
     // ════════════════════════════════════════════════════════
@@ -38,8 +40,7 @@ class AuthController {
             redirect('/login');
         }
 
-        $userModel = new User($this->db);
-        $user = $userModel->findByEmailOrUsername($validated['login']);
+        $user = $this->userModel->findByEmailOrUsername($validated['login']);
 
         if (!$user || !password_verify($validated['password'], $user['password_hash'])) {
             $_SESSION['errors'] = ['login' => ['Neplatné přihlašovací údaje']];
@@ -53,7 +54,7 @@ class AuthController {
         }
 
         // Update last login
-        $userModel->updateLastLogin($user['id']);
+        $this->userModel->updateLastLogin($user['id']);
 
         // Login
         Auth::login($user);
@@ -93,24 +94,22 @@ class AuthController {
             redirect('/register');
         }
 
-        $userModel = new User($this->db);
-
         // Check if email exists
-        if ($userModel->findByEmail($validated['email'])) {
+        if ($this->userModel->findByEmail($validated['email'])) {
             $_SESSION['errors'] = ['email' => ['Email je již registrován']];
             $_SESSION['old'] = $_POST;
             redirect('/register');
         }
 
         // Check if username exists
-        if ($userModel->findByUsername($validated['username'])) {
+        if ($this->userModel->findByUsername($validated['username'])) {
             $_SESSION['errors'] = ['username' => ['Uživatelské jméno je obsazeno']];
             $_SESSION['old'] = $_POST;
             redirect('/register');
         }
 
         // Create user
-        $userId = $userModel->create([
+        $userId = $this->userModel->create([
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password_hash' => password_hash($validated['password'], PASSWORD_DEFAULT),

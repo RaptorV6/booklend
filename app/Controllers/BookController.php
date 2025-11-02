@@ -11,11 +11,13 @@ class BookController {
     private Database $db;
     private Cache $cache;
     private Book $bookModel;
+    private Rental $rentalModel;
 
     public function __construct(Database $db, Cache $cache) {
         $this->db = $db;
         $this->cache = $cache;
         $this->bookModel = new Book($db, $cache);
+        $this->rentalModel = new Rental($db);
     }
 
     // ════════════════════════════════════════════════════════
@@ -81,8 +83,7 @@ class BookController {
         // Check if user has rented this book
         $isRented = false;
         if (Auth::check()) {
-            $rentalModel = new Rental($this->db);
-            $isRented = $rentalModel->isBookRentedByUser(Auth::id(), $book['id']);
+            $isRented = $this->rentalModel->isBookRentedByUser(Auth::id(), $book['id']);
         }
 
         $title = $book['title'];
@@ -140,7 +141,7 @@ class BookController {
     // ════════════════════════════════════════════════════════
 
     public function apiRent(): void {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         $bookId = $data['book_id'] ?? null;
 
         if (!$bookId) {
@@ -157,15 +158,13 @@ class BookController {
             jsonResponse(['error' => 'Kniha není dostupná'], 409);
         }
 
-        $rentalModel = new Rental($this->db);
-
         // Check if already rented
-        if ($rentalModel->isBookRentedByUser(Auth::id(), $bookId)) {
+        if ($this->rentalModel->isBookRentedByUser(Auth::id(), $bookId)) {
             jsonResponse(['error' => 'Už jste si tuto knihu půjčili'], 409);
         }
 
         try {
-            $rentalModel->create(Auth::id(), $bookId, 14);
+            $this->rentalModel->create(Auth::id(), $bookId, 14);
             jsonResponse(['success' => true, 'message' => 'Kniha půjčena']);
         } catch (\Exception $e) {
             error_log("Rent error: " . $e->getMessage());
@@ -174,15 +173,14 @@ class BookController {
     }
 
     public function apiReturn(): void {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         $rentalId = $data['rental_id'] ?? null;
 
         if (!$rentalId) {
             jsonResponse(['error' => 'Rental ID required'], 400);
         }
 
-        $rentalModel = new Rental($this->db);
-        $rental = $rentalModel->findById($rentalId);
+        $rental = $this->rentalModel->findById($rentalId);
 
         if (!$rental || $rental['user_id'] != Auth::id()) {
             jsonResponse(['error' => 'Výpůjčka nenalezena'], 404);
@@ -193,7 +191,7 @@ class BookController {
         }
 
         try {
-            $rentalModel->returnBook($rentalId);
+            $this->rentalModel->returnBook($rentalId);
             jsonResponse(['success' => true, 'message' => 'Kniha vrácena']);
         } catch (\Exception $e) {
             error_log("Return error: " . $e->getMessage());
