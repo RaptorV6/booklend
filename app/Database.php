@@ -50,6 +50,16 @@ class Database {
         return $this->query($sql, $params)->fetchAll();
     }
 
+    public function insert(string $sql, array $params = []): int {
+        $this->query($sql, $params);
+        return $this->lastInsertId();
+    }
+
+    public function execute(string $sql, array $params = []): bool {
+        $stmt = $this->connect()->prepare($sql);
+        return $stmt->execute($params);
+    }
+
     public function lastInsertId(): int {
         return (int) $this->connect()->lastInsertId();
     }

@@ -1,4 +1,43 @@
-<?php ob_start(); ?>
+<?php
+// SEO proměnné
+$title = e($book['title']) . ' – ' . e($book['author']);
+$description = 'Vypůjčte si knihu ' . e($book['title']) . ' od ' . e($book['author']) . '. ' . e(substr($book['description'], 0, 150)) . '...';
+$pageUrl = BASE_URL . '/kniha/' . e($book['slug']);
+$coverUrl = e($book['thumbnail']);
+
+// SEO tagy
+ob_start();
+?>
+<!-- Canonical URL -->
+<link rel="canonical" href="<?= $pageUrl ?>">
+
+<!-- Open Graph & Twitter Cards -->
+<meta property="og:type" content="book">
+<meta property="og:title" content="<?= e($title) ?>">
+<meta property="og:description" content="<?= e($description) ?>">
+<meta property="og:image" content="<?= $coverUrl ?>">
+<meta property="og:url" content="<?= $pageUrl ?>">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Strukturovaná data (JSON-LD) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "<?= e($book['title']) ?>",
+  "author": {
+    "@type": "Person",
+    "name": "<?= e($book['author']) ?>"
+  },
+  "isbn": "<?= e($book['isbn']) ?>",
+  "image": "<?= $coverUrl ?>"
+}
+</script>
+<?php
+$seo_tags = ob_get_clean();
+
+ob_start();
+?>
 
 <div class="container">
     <div class="book-detail">

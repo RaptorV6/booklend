@@ -24,3 +24,14 @@ $router->get('/moje-vypujcky', 'UserController', 'loans', 'auth');
 // AJAX routes (protected)
 $router->post('/api/rent', 'BookController', 'apiRent', 'auth');
 $router->post('/api/return', 'BookController', 'apiReturn', 'auth');
+
+// Admin routes (protected - admin only)
+$router->get('/admin', 'AdminController', 'dashboard', 'admin');
+$router->get('/api/admin/book', 'AdminController', 'apiGetBook', 'admin');
+$router->get('/api/admin/books', 'AdminController', 'apiGetBooks', 'admin');
+$router->get('/api/admin/search-books', 'AdminController', 'apiSearchBooks', 'admin');
+$router->get('/api/admin/check-isbn', 'AdminController', 'apiCheckIsbn', 'admin');
+$router->post('/api/admin/create', 'AdminController', 'apiCreate', 'admin');
+$router->post('/api/admin/update', 'AdminController', 'apiUpdate', 'admin');
+$router->post('/api/admin/update-stock', 'AdminController', 'apiUpdateStock', 'admin');
+$router->post('/api/admin/delete', 'AdminController', 'apiDelete', 'admin');

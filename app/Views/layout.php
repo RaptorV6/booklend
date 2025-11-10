@@ -8,7 +8,7 @@
 
     <!-- SEO Meta -->
     <meta name="description" content="<?= e($description ?? 'Moderní online půjčovna knih') ?>">
-    <meta name="keywords" content="půjčovna knih, knihy online, book lending">
+    <?= $seo_tags ?? '' ?>
 
     <!-- CSS -->
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
@@ -63,6 +63,18 @@
                                 </svg>
                                 Výpůjčky
                             </a>
+                            <?php if (app\Auth::isAdmin()): ?>
+                                <hr>
+                                <a href="<?= BASE_URL ?>/admin" style="color: #3b82f6;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                        <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                        <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                        <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                        <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    Admin
+                                </a>
+                            <?php endif; ?>
                             <hr>
                             <form method="POST" action="<?= BASE_URL ?>/logout">
                                 <button type="submit" class="logout-btn">

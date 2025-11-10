@@ -60,6 +60,13 @@ class Router {
                     }
                 }
 
+                if ($route['middleware'] === 'admin') {
+                    if (!Auth::isAdmin()) {
+                        header('Location: ' . BASE_URL . '/');
+                        exit;
+                    }
+                }
+
                 // Instantiate controller
                 $controllerClass = "app\\Controllers\\{$route['controller']}";
                 $controller = new $controllerClass($this->db, $this->cache);

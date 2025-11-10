@@ -162,6 +162,90 @@ class Book {
         );
     }
 
+    public function create(array $data): int {
+        $slug = $this->generateSlug($data['title']);
+
+        return $this->db->insert(
+            "INSERT INTO books (title, author, isbn, slug, genre, published_year, total_copies, available_copies, thumbnail)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                $data['title'],
+                $data['author'],
+                $data['isbn'],
+                $slug,
+                $data['genre'] ?? null,
+                $data['published_year'] ?? null,
+                $data['total_copies'] ?? 1,
+                $data['available_copies'] ?? 1,
+                $data['thumbnail'] ?? null,
+            ]
+        );
+    }
+
+    public function update(int $id, array $data): bool {
+        $slug = $this->generateSlug($data['title']);
+
+        return $this->db->execute(
+            "UPDATE books
+             SET title = ?, author = ?, isbn = ?, slug = ?, genre = ?,
+                 published_year = ?, total_copies = ?, available_copies = ?, thumbnail = ?
+             WHERE id = ?",
+            [
+                $data['title'],
+                $data['author'],
+                $data['isbn'],
+                $slug,
+                $data['genre'] ?? null,
+                $data['published_year'] ?? null,
+                $data['total_copies'] ?? 1,
+                $data['available_copies'] ?? 1,
+                $data['thumbnail'] ?? null,
+                $id
+            ]
+        );
+    }
+
+    public function delete(int $id): bool {
+        return $this->db->execute(
+            "UPDATE books SET deleted_at = NOW() WHERE id = ?",
+            [$id]
+        );
+    }
+
+    public function updateStock(int $id, int $totalCopies, int $availableCopies): bool {
+        return $this->db->execute(
+            "UPDATE books SET total_copies = ?, available_copies = ? WHERE id = ?",
+            [$totalCopies, $availableCopies, $id]
+        );
+    }
+
+    public function findByIsbn(string $isbn): ?array {
+        return $this->db->fetch(
+            "SELECT * FROM books WHERE isbn = ? AND deleted_at IS NULL",
+            [$isbn]
+        );
+    }
+
+    public function existsByIsbn(string $isbn, ?int $excludeId = null): bool {
+        $query = "SELECT COUNT(*) as count FROM books WHERE isbn = ? AND deleted_at IS NULL";
+        $params = [$isbn];
+
+        if ($excludeId) {
+            $query .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+
+        $result = $this->db->fetch($query, $params);
+        return ($result['count'] ?? 0) > 0;
+    }
+
+    private function generateSlug(string $title): string {
+        $slug = mb_strtolower($title);
+        $slug = preg_replace('/[^a-z0-9\s-]/u', '', $slug);
+        $slug = preg_replace('/[\s-]+/', '-', $slug);
+        return trim($slug, '-');
+    }
+
     // ════════════════════════════════════════════════════════
     // API INTEGRATION (POUZE TU!)
     // ════════════════════════════════════════════════════════

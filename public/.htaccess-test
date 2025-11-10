@@ -1,3 +1,0 @@
-# Test htaccess
-RewriteEngine On
-RewriteRule ^test-rewrite$ index.php [L]
