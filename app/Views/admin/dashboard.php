@@ -21,7 +21,6 @@ ob_start();
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Obrázek</th>
                     <th>Název</th>
                     <th>Autor</th>
                     <th>ISBN</th>
@@ -237,13 +236,6 @@ ob_start();
     padding: 2px 8px;
     border-radius: 4px;
     display: inline-block;
-}
-
-.admin-book-thumb {
-    max-width: 60px;
-    height: auto;
-    border-radius: 4px;
-    display: block;
 }
 
 .admin-actions {
@@ -743,17 +735,12 @@ const AdminLazyLoad = {
     createBookRow(book) {
         const tr = document.createElement('tr');
 
-        const thumbnail = book.thumbnail
-            ? `<img src="${escapeHtml(book.thumbnail)}" alt="Cover" class="admin-book-thumb">`
-            : '<span style="color: var(--text-muted);">-</span>';
-
         const genre = book.genre
             ? `<span class="badge badge-genre">${escapeHtml(book.genre)}</span>`
             : '<span style="color: var(--text-muted);">-</span>';
 
         tr.innerHTML = `
             <td data-label="ID">${book.id}</td>
-            <td data-label="Obrázek">${thumbnail}</td>
             <td data-label="Název" class="book-title-cell">${escapeHtml(book.title)}</td>
             <td data-label="Autor">${escapeHtml(book.author)}</td>
             <td data-label="ISBN"><span class="isbn-badge">${escapeHtml(book.isbn)}</span></td>
