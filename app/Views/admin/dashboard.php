@@ -949,9 +949,6 @@ ob_start();
 
 <script src="<?= BASE_URL ?>/assets/js/ajax.js"></script>
 <script>
-console.log('📦 Admin Dashboard v2.1 - Build: <?= date('Y-m-d H:i:s') ?>');
-console.log('🔧 No-cache headers enabled');
-
 const BASE_URL = '<?= BASE_URL ?>';
 
 // Lazy Loading Controller
@@ -1088,8 +1085,6 @@ async function searchBooks(query) {
 
     try {
         const url = `${BASE_URL}/api/admin/search-books?q=${encodeURIComponent(query)}`;
-        console.log('🔍 Searching:', query);
-
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -1097,11 +1092,9 @@ async function searchBooks(query) {
         }
 
         const data = await response.json();
-        console.log('✅ Found:', data.items?.length || 0, 'books');
-
         displaySearchResults(data.items || []);
     } catch (error) {
-        console.error('❌ Search error:', error);
+        console.error('Search error:', error);
         resultsDiv.innerHTML = '<div class="search-error">Chyba při vyhledávání. Zkuste to znovu.</div>';
         resultsDiv.classList.add('active');
     } finally {
@@ -1146,8 +1139,6 @@ function createSearchResultItem(book) {
 }
 
 async function selectBook(book) {
-    console.log('📚 Selected:', book.title);
-
     // Check ISBN duplicate
     try {
         const response = await fetch(`${BASE_URL}/api/admin/check-isbn?isbn=${encodeURIComponent(book.isbn)}`);
@@ -1168,50 +1159,32 @@ async function selectBook(book) {
     document.getElementById('searchResults').classList.remove('active');
     document.getElementById('bookPreview').style.display = 'block';
 
-    // Fill preview (V2)
+    // Fill preview
     const placeholder = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22150%22%3E%3Crect fill=%22%23334155%22 width=%22100%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2240%22%3E📚%3C/text%3E%3C/svg%3E';
 
-    const thumbnailEl = document.getElementById('previewThumbnailV2');
-    const titleEl = document.getElementById('previewTitleV2');
-    const authorEl = document.getElementById('previewAuthorV2');
-    const isbnEl = document.getElementById('previewIsbnV2');
-
-    if (!thumbnailEl || !titleEl || !authorEl || !isbnEl) {
-        console.error('⚠️ Preview elements not found! DOM:', {
-            thumbnail: !!thumbnailEl,
-            title: !!titleEl,
-            author: !!authorEl,
-            isbn: !!isbnEl
-        });
-        window.toast.error('Chyba: Restartujte Apache a obnovte stránku');
-        return;
-    }
-
-    thumbnailEl.src = book.thumbnail || placeholder;
-    titleEl.textContent = book.title;
-    authorEl.textContent = book.author || 'Neznámý autor';
-    isbnEl.textContent = book.isbn;
+    document.getElementById('previewThumbnailV2').src = book.thumbnail || placeholder;
+    document.getElementById('previewTitleV2').textContent = book.title;
+    document.getElementById('previewAuthorV2').textContent = book.author || 'Neznámý autor';
+    document.getElementById('previewIsbnV2').textContent = book.isbn;
 
     const genreEl = document.getElementById('previewGenreV2');
-    if (book.genre && genreEl) {
+    if (book.genre) {
         genreEl.textContent = book.genre;
         genreEl.style.display = 'inline-block';
-    } else if (genreEl) {
+    } else {
         genreEl.style.display = 'none';
     }
 
     const yearEl = document.getElementById('previewYearV2');
-    if (book.published_year && yearEl) {
+    if (book.published_year) {
         yearEl.textContent = book.published_year;
         yearEl.style.display = 'inline-block';
-    } else if (yearEl) {
+    } else {
         yearEl.style.display = 'none';
     }
 
     const descriptionEl = document.getElementById('previewDescriptionV2');
-    if (descriptionEl) {
-        descriptionEl.textContent = book.description || '';
-    }
+    descriptionEl.textContent = book.description || '';
 }
 
 function resetSearch() {
@@ -1264,7 +1237,6 @@ async function addBook() {
     };
 
     try {
-        console.log('📤 Adding book:', data.title);
         const response = await fetch(`${BASE_URL}/api/admin/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1272,14 +1244,11 @@ async function addBook() {
         });
 
         if (!response.ok) {
-            const text = await response.text();
-            console.error('Server error:', response.status, text);
             window.toast.error(`Chyba serveru: ${response.status}`);
             return;
         }
 
         const result = await response.json();
-        console.log('Result:', result);
 
         if (result.success) {
             window.toast.success(result.message || 'Kniha přidána');
@@ -1344,24 +1313,18 @@ async function updateStock() {
     };
 
     try {
-        console.log('Updating stock:', data);
         const response = await fetch(`${BASE_URL}/api/admin/update-stock`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
 
-        console.log('Response status:', response.status);
-
         if (!response.ok) {
-            const text = await response.text();
-            console.error('Server error:', response.status, text);
-            window.toast.error('Server error: ' + response.status);
+            window.toast.error('Chyba serveru: ' + response.status);
             return;
         }
 
         const result = await response.json();
-        console.log('Result:', result);
 
         if (result.success) {
             window.toast.success(result.message || 'Skladové stavy aktualizovány');

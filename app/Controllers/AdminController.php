@@ -46,22 +46,18 @@ class AdminController {
         }
 
         $data = jsonInput();
-        error_log("Admin create: " . json_encode($data));
 
         if (empty($data['title']) || empty($data['author']) || empty($data['isbn'])) {
-            error_log("Admin create: Missing required fields");
             jsonResponse(['error' => 'Název, autor a ISBN jsou povinné'], 400);
         }
 
         // Check for duplicate ISBN
         if ($this->bookModel->existsByIsbn($data['isbn'])) {
-            error_log("Admin create: Duplicate ISBN {$data['isbn']}");
             jsonResponse(['error' => 'Kniha s tímto ISBN již existuje'], 409);
         }
 
         try {
             $id = $this->bookModel->create($data);
-            error_log("Admin create: Success, ID = $id");
             jsonResponse(['success' => true, 'message' => 'Kniha přidána', 'id' => $id]);
         } catch (\Exception $e) {
             error_log("Admin create error: " . $e->getMessage());
@@ -100,18 +96,15 @@ class AdminController {
         }
 
         $data = jsonInput();
-        error_log("Admin delete: " . json_encode($data));
 
         $bookId = $data['id'] ?? null;
 
         if (!$bookId) {
-            error_log("Admin delete: Missing book ID");
             jsonResponse(['error' => 'Book ID required'], 400);
         }
 
         try {
             $result = $this->bookModel->delete($bookId);
-            error_log("Admin delete: Success for ID $bookId, result = " . ($result ? 'true' : 'false'));
             jsonResponse(['success' => true, 'message' => 'Kniha smazána']);
         } catch (\Exception $e) {
             error_log("Admin delete error: " . $e->getMessage());
@@ -177,8 +170,6 @@ class AdminController {
         // Search in Google Books API using cURL (more reliable than file_get_contents)
         $url = GOOGLE_BOOKS_API . "?q=" . urlencode($query) . "&maxResults=20&key=" . GOOGLE_BOOKS_API_KEY;
 
-        error_log("Google Books API URL: $url");
-
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -212,13 +203,9 @@ class AdminController {
         $data = json_decode($response, true);
 
         if (!isset($data['items'])) {
-            error_log("Google Books API: No items found for query '$query'");
-            error_log("API Response: " . substr($response, 0, 500));
-            jsonResponse(['items' => [], 'debug' => 'No items in API response']);
+            jsonResponse(['items' => []]);
             return;
         }
-
-        error_log("Google Books API: Found " . count($data['items']) . " items");
 
         // Format results
         $items = [];
@@ -247,7 +234,6 @@ class AdminController {
 
             // Skip only if NO ISBN at all
             if (!$isbn) {
-                error_log("Skipping item (no ISBN): " . ($volumeInfo['title'] ?? 'Unknown'));
                 continue;
             }
 
@@ -257,8 +243,6 @@ class AdminController {
                 $thumbnail = str_replace('http://', 'https://', $volumeInfo['imageLinks']['thumbnail']);
                 $thumbnail = preg_replace('/[&?]zoom=\d+/', '', $thumbnail);
                 $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=0';
-            } else {
-                error_log("Item without thumbnail: " . ($volumeInfo['title'] ?? 'Unknown'));
             }
 
             $items[] = [
@@ -272,7 +256,6 @@ class AdminController {
             ];
         }
 
-        error_log("Returning " . count($items) . " filtered items (with ISBN-13 and thumbnail)");
         jsonResponse(['items' => $items]);
     }
 
@@ -299,25 +282,21 @@ class AdminController {
         }
 
         $data = jsonInput();
-        error_log("Admin update stock: " . json_encode($data));
 
         $bookId = $data['id'] ?? null;
         $totalCopies = $data['total_copies'] ?? null;
         $availableCopies = $data['available_copies'] ?? null;
 
         if (!$bookId || $totalCopies === null || $availableCopies === null) {
-            error_log("Admin update stock: Missing required fields");
             jsonResponse(['error' => 'ID, total_copies a available_copies jsou povinné'], 400);
         }
 
         if ($availableCopies > $totalCopies) {
-            error_log("Admin update stock: Invalid values (available > total)");
             jsonResponse(['error' => 'Dostupných kopií nemůže být více než celkem'], 400);
         }
 
         try {
             $result = $this->bookModel->updateStock($bookId, $totalCopies, $availableCopies);
-            error_log("Admin update stock: Success, result = " . ($result ? 'true' : 'false'));
             jsonResponse(['success' => true, 'message' => 'Skladové stavy aktualizovány']);
         } catch (\Exception $e) {
             error_log("Admin update stock error: " . $e->getMessage());

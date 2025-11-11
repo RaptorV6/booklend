@@ -89,9 +89,15 @@ class Book {
         }
 
         // Build ORDER BY clause
-        $orderBy = "title ASC"; // default
+        $orderBy = "id DESC"; // default - newest first
         if (!empty($filters['sort'])) {
             switch ($filters['sort']) {
+                case 'newest':
+                    $orderBy = "id DESC";
+                    break;
+                case 'oldest':
+                    $orderBy = "id ASC";
+                    break;
                 case 'title-asc':
                     $orderBy = "title ASC";
                     break;

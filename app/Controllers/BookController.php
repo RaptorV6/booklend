@@ -68,7 +68,7 @@ class BookController {
 
         if (!empty($_GET['sort'])) {
             // SECURITY: Whitelist allowed sort values
-            $allowedSorts = ['title-asc', 'title-desc', 'author-asc', 'author-desc', 'year-asc', 'year-desc'];
+            $allowedSorts = ['newest', 'oldest', 'title-asc', 'title-desc', 'author-asc', 'author-desc', 'year-asc', 'year-desc'];
             if (in_array($_GET['sort'], $allowedSorts, true)) {
                 $filters['sort'] = $_GET['sort'];
             }
@@ -206,7 +206,7 @@ class BookController {
 
         if (!empty($_GET['sort'])) {
             // SECURITY: Whitelist allowed sort values
-            $allowedSorts = ['title-asc', 'title-desc', 'author-asc', 'author-desc', 'year-asc', 'year-desc'];
+            $allowedSorts = ['newest', 'oldest', 'title-asc', 'title-desc', 'author-asc', 'author-desc', 'year-asc', 'year-desc'];
             if (in_array($_GET['sort'], $allowedSorts, true)) {
                 $filters['sort'] = $_GET['sort'];
             }

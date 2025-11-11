@@ -104,7 +104,10 @@ async function rentBook(bookId) {
 
         if (response.ok && data.success) {
             window.toast.success(data.message || 'Kniha byla úspěšně půjčena!');
-            setTimeout(() => location.reload(), 1500);
+
+            // Update UI without reload
+            updateBookAvailability(-1);
+            updateRentButton(bookId, true);
         } else {
             console.error('Rent failed:', data);
             window.toast.error(data.error || 'Chyba při půjčování knihy');
@@ -142,6 +145,8 @@ async function returnBook(rentalId) {
 
         if (response.ok && data.success) {
             window.toast.success(data.message || 'Kniha byla úspěšně vrácena!');
+
+            // Reload on return (user is on "My Rentals" page)
             setTimeout(() => location.reload(), 1500);
         } else {
             console.error('Return failed:', data);
@@ -150,5 +155,40 @@ async function returnBook(rentalId) {
     } catch (error) {
         console.error('Return error:', error);
         window.toast.error('Nastala chyba při vracení.');
+    }
+}
+
+/**
+ * Update book availability count on detail page
+ * @param {number} change - Amount to change (-1 for rent, +1 for return)
+ */
+function updateBookAvailability(change) {
+    const availabilityEl = document.getElementById('availability-count');
+    if (!availabilityEl) return;
+
+    const currentAvailable = parseInt(availabilityEl.dataset.available);
+    const total = parseInt(availabilityEl.dataset.total);
+    const newAvailable = currentAvailable + change;
+
+    if (newAvailable < 0 || newAvailable > total) return;
+
+    availabilityEl.dataset.available = newAvailable;
+    availabilityEl.textContent = `${newAvailable} / ${total}`;
+}
+
+/**
+ * Update rent button state on detail page
+ * @param {number} bookId - Book ID
+ * @param {boolean} isRented - Whether book is now rented
+ */
+function updateRentButton(bookId, isRented) {
+    const button = document.getElementById('rent-button');
+    if (!button) return;
+
+    if (isRented) {
+        button.className = 'btn btn-secondary';
+        button.disabled = true;
+        button.textContent = 'Již vypůjčeno';
+        button.removeAttribute('onclick');
     }
 }
