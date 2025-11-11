@@ -1,7 +1,8 @@
 <?php
 // SEO proměnné
 $title = e($book['title']) . ' – ' . e($book['author']);
-$description = 'Vypůjčte si knihu ' . e($book['title']) . ' od ' . e($book['author']) . '. ' . e(substr($book['description'], 0, 150)) . '...';
+$bookDesc = !empty($book['description']) ? substr($book['description'], 0, 150) . '...' : 'Detaily o knize dostupné po přihlášení.';
+$description = 'Vypůjčte si knihu ' . e($book['title']) . ' od ' . e($book['author']) . '. ' . e($bookDesc);
 $pageUrl = BASE_URL . '/kniha/' . e($book['slug']);
 $coverUrl = e($book['thumbnail']);
 

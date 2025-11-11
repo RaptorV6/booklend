@@ -60,16 +60,32 @@ class Book {
         $where = ["deleted_at IS NULL"];
         $params = [];
 
-        // Genre filter
+        // Genre filter - support multiple values
         if (!empty($filters['genre'])) {
-            $where[] = "genre = ?";
-            $params[] = $filters['genre'];
+            if (is_array($filters['genre'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['genre']), '?'));
+                $where[] = "genre IN ($placeholders)";
+                foreach ($filters['genre'] as $genre) {
+                    $params[] = $genre;
+                }
+            } else {
+                $where[] = "genre = ?";
+                $params[] = $filters['genre'];
+            }
         }
 
-        // Published year filter
+        // Published year filter - support multiple values
         if (!empty($filters['year'])) {
-            $where[] = "published_year = ?";
-            $params[] = (int)$filters['year'];
+            if (is_array($filters['year'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['year']), '?'));
+                $where[] = "published_year IN ($placeholders)";
+                foreach ($filters['year'] as $year) {
+                    $params[] = (int)$year;
+                }
+            } else {
+                $where[] = "published_year = ?";
+                $params[] = (int)$filters['year'];
+            }
         }
 
         // Build ORDER BY clause
@@ -115,14 +131,32 @@ class Book {
         $where = ["deleted_at IS NULL"];
         $params = [];
 
+        // Genre filter - support multiple values
         if (!empty($filters['genre'])) {
-            $where[] = "genre = ?";
-            $params[] = $filters['genre'];
+            if (is_array($filters['genre'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['genre']), '?'));
+                $where[] = "genre IN ($placeholders)";
+                foreach ($filters['genre'] as $genre) {
+                    $params[] = $genre;
+                }
+            } else {
+                $where[] = "genre = ?";
+                $params[] = $filters['genre'];
+            }
         }
 
+        // Published year filter - support multiple values
         if (!empty($filters['year'])) {
-            $where[] = "published_year = ?";
-            $params[] = (int)$filters['year'];
+            if (is_array($filters['year'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['year']), '?'));
+                $where[] = "published_year IN ($placeholders)";
+                foreach ($filters['year'] as $year) {
+                    $params[] = (int)$year;
+                }
+            } else {
+                $where[] = "published_year = ?";
+                $params[] = (int)$filters['year'];
+            }
         }
 
         $whereClause = implode(" AND ", $where);

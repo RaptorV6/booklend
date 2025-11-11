@@ -29,16 +29,49 @@ class BookController {
         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
         $perPage = 12;
 
-        // Build filters array from query parameters
+        // Build filters array from query parameters (using Czech parameter names)
+        // Support multiple values: ?zanr=Fantasy-Horor (hyphen-separated, RFC 3986 unreserved = no encoding)
+        // SECURITY: All values are validated and sanitized
         $filters = [];
-        if (!empty($_GET['genre'])) {
-            $filters['genre'] = $_GET['genre'];
+
+        if (!empty($_GET['zanr'])) {
+            // Handle both array format (?zanr[]=...) and hyphen-separated (?zanr=Fantasy-Horor)
+            $genres = is_array($_GET['zanr'])
+                ? $_GET['zanr']
+                : array_map('trim', explode('-', $_GET['zanr']));
+
+            // SECURITY: Filter out empty values and limit length
+            $genres = array_filter($genres, function($g) {
+                return !empty($g) && strlen($g) <= 50;
+            });
+
+            if (!empty($genres)) {
+                $filters['genre'] = array_values($genres); // re-index array
+            }
         }
-        if (!empty($_GET['year'])) {
-            $filters['year'] = (int)$_GET['year'];
+
+        if (!empty($_GET['rok'])) {
+            // Handle both array format (?rok[]=...) and hyphen-separated (?rok=2020-2021)
+            $years = is_array($_GET['rok'])
+                ? array_map('intval', $_GET['rok'])
+                : array_map('intval', array_map('trim', explode('-', $_GET['rok'])));
+
+            // SECURITY: Filter out invalid years (must be 1800-2100)
+            $years = array_filter($years, function($y) {
+                return $y >= 1800 && $y <= 2100;
+            });
+
+            if (!empty($years)) {
+                $filters['year'] = array_values($years); // re-index array
+            }
         }
+
         if (!empty($_GET['sort'])) {
-            $filters['sort'] = $_GET['sort'];
+            // SECURITY: Whitelist allowed sort values
+            $allowedSorts = ['title-asc', 'title-desc', 'author-asc', 'author-desc', 'year-asc', 'year-desc'];
+            if (in_array($_GET['sort'], $allowedSorts, true)) {
+                $filters['sort'] = $_GET['sort'];
+            }
         }
 
         // Get filter options
@@ -63,7 +96,31 @@ class BookController {
         // Current filters for frontend
         $currentFilters = $filters;
 
+        // SEO: Dynamic title and description based on filters
+        // BEST PRACTICE: Only customize for single filters (indexable pages)
+        // Combinations/multiple values keep default (canonical points elsewhere)
         $title = 'Katalog knih';
+        $description = 'Objevte náš online katalog knih. Moderní půjčovna knih s širokou nabídkou titulů pro každého čtenáře.';
+
+        $hasGenre = !empty($filters['genre']);
+        $hasYear = !empty($filters['year']);
+        $singleGenre = $hasGenre && count($filters['genre']) === 1;
+        $singleYear = $hasYear && count($filters['year']) === 1;
+
+        // Only customize meta for single filter pages (these will be indexed)
+        if ($singleGenre && !$hasYear) {
+            // Single genre only → indexable
+            $genre = ucfirst($filters['genre'][0]);
+            $title = $genre . ' knihy - Online půjčovna | BookLend';
+            $description = 'Objevte nejlepší ' . strtolower($genre) . ' knihy v naší online půjčovně. Široký výběr kvalitních titulů žánru ' . $genre . '.';
+        } elseif ($singleYear && !$hasGenre) {
+            // Single year only → indexable
+            $year = $filters['year'][0];
+            $title = 'Knihy z roku ' . $year . ' - BookLend';
+            $description = 'Prohlédněte si knihy vydané v roce ' . $year . '. Aktuální novinky i klasické tituly v naší online půjčovně.';
+        }
+        // else: keep default for combinations/multiple values (canonical to homepage or first value)
+
         require __DIR__ . '/../Views/books/catalog.php';
     }
 
@@ -110,16 +167,49 @@ class BookController {
         if ($page < 1) $page = 1;
         if ($limit < 1 || $limit > 50) $limit = 12;
 
-        // Build filters from query parameters
+        // Build filters from query parameters (using Czech parameter names)
+        // Support multiple values: ?zanr=Fantasy-Horor (hyphen-separated, RFC 3986 unreserved = no encoding)
+        // SECURITY: All values are validated and sanitized
         $filters = [];
-        if (!empty($_GET['genre'])) {
-            $filters['genre'] = $_GET['genre'];
+
+        if (!empty($_GET['zanr'])) {
+            // Handle both array format (?zanr[]=...) and hyphen-separated (?zanr=Fantasy-Horor)
+            $genres = is_array($_GET['zanr'])
+                ? $_GET['zanr']
+                : array_map('trim', explode('-', $_GET['zanr']));
+
+            // SECURITY: Filter out empty values and limit length
+            $genres = array_filter($genres, function($g) {
+                return !empty($g) && strlen($g) <= 50;
+            });
+
+            if (!empty($genres)) {
+                $filters['genre'] = array_values($genres); // re-index array
+            }
         }
-        if (!empty($_GET['year'])) {
-            $filters['year'] = (int)$_GET['year'];
+
+        if (!empty($_GET['rok'])) {
+            // Handle both array format (?rok[]=...) and hyphen-separated (?rok=2020-2021)
+            $years = is_array($_GET['rok'])
+                ? array_map('intval', $_GET['rok'])
+                : array_map('intval', array_map('trim', explode('-', $_GET['rok'])));
+
+            // SECURITY: Filter out invalid years (must be 1800-2100)
+            $years = array_filter($years, function($y) {
+                return $y >= 1800 && $y <= 2100;
+            });
+
+            if (!empty($years)) {
+                $filters['year'] = array_values($years); // re-index array
+            }
         }
+
         if (!empty($_GET['sort'])) {
-            $filters['sort'] = $_GET['sort'];
+            // SECURITY: Whitelist allowed sort values
+            $allowedSorts = ['title-asc', 'title-desc', 'author-asc', 'author-desc', 'year-asc', 'year-desc'];
+            if (in_array($_GET['sort'], $allowedSorts, true)) {
+                $filters['sort'] = $_GET['sort'];
+            }
         }
 
         $books = $this->bookModel->paginate($page, $limit, $filters);

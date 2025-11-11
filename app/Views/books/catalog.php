@@ -1,4 +1,82 @@
-<?php ob_start(); ?>
+<?php
+// SEO tagy
+$defaultImage = BASE_URL . '/assets/img/og-default.jpg'; // fallback OG image
+
+// SEO BEST PRACTICE: Canonical URL logic for filter combinations
+// Single filter = index it, Multiple values or combinations = canonical to simpler version
+$canonicalUrl = BASE_URL . '/';
+
+$hasGenre = !empty($currentFilters['genre']);
+$hasYear = !empty($currentFilters['year']);
+$multipleGenres = $hasGenre && count($currentFilters['genre']) > 1;
+$multipleYears = $hasYear && count($currentFilters['year']) > 1;
+
+if ($hasGenre && $hasYear) {
+    // Combination of genre + year filters → canonical to homepage
+    $canonicalUrl = BASE_URL . '/';
+} elseif ($multipleGenres) {
+    // Multiple genres → canonical to first genre only
+    $canonicalUrl = BASE_URL . '/?zanr=' . urlencode($currentFilters['genre'][0]);
+} elseif ($multipleYears) {
+    // Multiple years → canonical to first year only
+    $canonicalUrl = BASE_URL . '/?rok=' . $currentFilters['year'][0];
+} elseif ($hasGenre && count($currentFilters['genre']) === 1) {
+    // Single genre filter → canonical to self (indexable)
+    $canonicalUrl = BASE_URL . '/?zanr=' . urlencode($currentFilters['genre'][0]);
+} elseif ($hasYear && count($currentFilters['year']) === 1) {
+    // Single year filter → canonical to self (indexable)
+    $canonicalUrl = BASE_URL . '/?rok=' . $currentFilters['year'][0];
+}
+// else: no filters → homepage canonical (already set)
+
+$pageUrl = $canonicalUrl; // For OG tags consistency
+
+ob_start();
+?>
+<!-- Canonical URL (SEO best practice for filter combinations) -->
+<link rel="canonical" href="<?= $canonicalUrl ?>">
+
+<!-- Open Graph & Twitter Cards -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="<?= e($title) ?>">
+<meta property="og:description" content="<?= e($description) ?>">
+<meta property="og:image" content="<?= $defaultImage ?>">
+<meta property="og:url" content="<?= $pageUrl ?>">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Strukturovaná data (JSON-LD) - ItemList -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Katalog knih - BookLend",
+  "description": "<?= e($description) ?>",
+  "numberOfItems": <?= count($books) ?>,
+  "itemListElement": [
+    <?php foreach ($books as $index => $book): ?>
+    {
+      "@type": "ListItem",
+      "position": <?= $index + 1 ?>,
+      "item": {
+        "@type": "Book",
+        "name": "<?= e($book['title']) ?>",
+        "author": {
+          "@type": "Person",
+          "name": "<?= e($book['author']) ?>"
+        },
+        "url": "<?= BASE_URL ?>/kniha/<?= e($book['slug']) ?>"
+      }
+    }<?= $index < count($books) - 1 ? ',' : '' ?>
+
+    <?php endforeach; ?>
+  ]
+}
+</script>
+<?php
+$seo_tags = ob_get_clean();
+
+ob_start();
+?>
 
 <div class="container">
     <h1 class="page-title">Katalog knih</h1>
@@ -35,7 +113,7 @@
                     <div class="chip-dropdown-content">
                         <?php foreach ($genres as $g): ?>
                             <label class="chip-option">
-                                <input type="checkbox" name="genres[]" value="<?= e($g['genre']) ?>" <?= (isset($currentFilters['genre']) && $currentFilters['genre'] === $g['genre']) ? 'checked' : '' ?>>
+                                <input type="checkbox" name="genres[]" value="<?= e($g['genre']) ?>" <?= (isset($currentFilters['genre']) && in_array($g['genre'], $currentFilters['genre'])) ? 'checked' : '' ?>>
                                 <span><?= e($g['genre']) ?></span>
                                 <span class="option-count"><?= $g['count'] ?></span>
                             </label>
@@ -66,7 +144,7 @@
                         <?php if (!empty($years)): ?>
                             <?php foreach ($years as $y): ?>
                                 <label class="chip-option">
-                                    <input type="checkbox" name="years[]" value="<?= $y['year'] ?>" <?= (isset($currentFilters['year']) && (int)$currentFilters['year'] === (int)$y['year']) ? 'checked' : '' ?>>
+                                    <input type="checkbox" name="years[]" value="<?= $y['year'] ?>" <?= (isset($currentFilters['year']) && in_array((int)$y['year'], $currentFilters['year'])) ? 'checked' : '' ?>>
                                     <span><?= $y['year'] ?></span>
                                     <span class="option-count"><?= $y['count'] ?></span>
                                 </label>
@@ -252,13 +330,22 @@ const LazyLoadController = {
             apiUrl.searchParams.set('page', nextPage);
             apiUrl.searchParams.set('limit', 12);
 
-            // Copy all filter params from current URL
-            ['genre', 'year', 'sort'].forEach(param => {
-                const value = currentUrl.searchParams.get(param);
-                if (value) {
-                    apiUrl.searchParams.set(param, value);
-                }
-            });
+            // Copy all filter params from current URL (Czech parameter names)
+            // Values are hyphen-separated: ?zanr=Fantasy-Horor
+            const zanrValue = currentUrl.searchParams.get('zanr');
+            if (zanrValue) {
+                apiUrl.searchParams.set('zanr', zanrValue);
+            }
+
+            const rokValue = currentUrl.searchParams.get('rok');
+            if (rokValue) {
+                apiUrl.searchParams.set('rok', rokValue);
+            }
+
+            const sortValue = currentUrl.searchParams.get('sort');
+            if (sortValue) {
+                apiUrl.searchParams.set('sort', sortValue);
+            }
 
             const response = await fetch(apiUrl);
             const data = await response.json();
@@ -476,20 +563,20 @@ const LazyLoadController = {
         const url = new URL(window.location.href);
         url.search = ''; // Clear existing params
 
-        // Genre filter (only first selected for now)
+        // Genre filter - support multiple values (hyphen-separated, RFC 3986 unreserved = no encoding)
         const selectedGenres = Array.from(
             document.querySelectorAll('input[name="genres[]"]:checked')
         ).map(cb => cb.value);
         if (selectedGenres.length > 0) {
-            url.searchParams.set('genre', selectedGenres[0]);
+            url.searchParams.set('zanr', selectedGenres.join('-'));
         }
 
-        // Year filter (only first selected)
+        // Year filter - support multiple values (hyphen-separated, RFC 3986 unreserved = no encoding)
         const selectedYears = Array.from(
             document.querySelectorAll('input[name="years[]"]:checked')
         ).map(cb => cb.value);
         if (selectedYears.length > 0) {
-            url.searchParams.set('year', selectedYears[0]);
+            url.searchParams.set('rok', selectedYears.join('-'));
         }
 
         // Sort filter

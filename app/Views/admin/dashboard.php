@@ -1,4 +1,13 @@
-<?php ob_start(); ?>
+<?php
+// SEO - Prevent admin pages from being indexed
+ob_start();
+?>
+<meta name="robots" content="noindex,nofollow">
+<?php
+$seo_tags = ob_get_clean();
+
+ob_start();
+?>
 
 <div class="container">
     <div class="admin-header">
