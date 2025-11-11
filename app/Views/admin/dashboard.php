@@ -61,60 +61,83 @@ ob_start();
 
 <!-- Add Book Modal -->
 <div id="addBookModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content add-book-modal">
         <div class="modal-header">
             <h2>Přidat knihu</h2>
             <button onclick="closeAddModal()" class="modal-close" aria-label="Zavřít">&times;</button>
         </div>
 
         <div class="modal-body">
-            <!-- Search Input -->
+            <!-- Search Section -->
             <div id="searchSection">
-                <div class="form-group">
-                    <label for="bookSearch">Vyhledat knihu podle názvu nebo ISBN *</label>
-                    <div class="search-box">
+                <div class="search-container">
+                    <label for="bookSearch" class="search-label">Vyhledejte knihu podle názvu nebo ISBN</label>
+                    <div class="search-input-wrapper">
                         <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
                             <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
-                        <input type="text" id="bookSearch" placeholder="Začněte psát název nebo ISBN..." autocomplete="off">
+                        <input
+                            type="text"
+                            id="bookSearch"
+                            class="search-input"
+                            placeholder="Např. 1984, George Orwell, 978-0-452-28423-4..."
+                            autocomplete="off"
+                        >
+                        <div id="searchLoader" class="search-loader" style="display: none;">
+                            <div class="spinner"></div>
+                        </div>
                     </div>
+                    <p class="search-hint">Začněte psát pro vyhledávání v Google Books databázi</p>
                 </div>
 
-                <!-- Search Results -->
-                <div id="search-results" class="search-results"></div>
+                <!-- Search Results List -->
+                <div id="searchResults" class="search-results-list"></div>
             </div>
 
             <!-- Selected Book Preview -->
-            <div id="bookPreview" style="display: none;">
-                <button type="button" onclick="ISBNSearch.resetSearch()" class="btn-secondary" style="margin-bottom: 16px;">
-                    ← Změnit výběr
+            <div id="bookPreview" class="book-preview-section" style="display: none;">
+                <button type="button" onclick="resetSearch()" class="btn-back">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Vybrat jinou knihu
                 </button>
 
-                <div class="book-preview-card">
-                    <img id="previewThumbnail" src="" alt="Cover" style="width: 100px; height: 150px; object-fit: cover; border-radius: 8px; flex-shrink: 0;">
-                    <div class="preview-info">
-                        <h3 id="previewTitle"></h3>
-                        <p id="previewAuthor"></p>
-                        <p id="previewIsbn" class="isbn-badge"></p>
-                        <p id="previewGenre"></p>
+                <div class="selected-book-card">
+                    <div class="book-cover-wrapper">
+                        <img id="previewThumbnailV2" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22150%22%3E%3Crect fill=%22%23334155%22 width=%22100%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2240%22%3E📚%3C/text%3E%3C/svg%3E" alt="Cover" style="width: 100px; height: 150px; object-fit: cover; border-radius: 8px;">
+                    </div>
+                    <div class="book-details">
+                        <h3 id="previewTitleV2"></h3>
+                        <p class="book-author" id="previewAuthorV2"></p>
+                        <div class="book-meta">
+                            <span id="previewIsbnV2" class="isbn-badge"></span>
+                            <span id="previewGenreV2" class="genre-badge"></span>
+                            <span id="previewYearV2" class="year-badge"></span>
+                        </div>
+                        <p class="book-description" id="previewDescriptionV2"></p>
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="stock-form">
                     <div class="form-group">
-                        <label for="totalCopies">Celkem kopií *</label>
+                        <label for="totalCopies">Celkový počet kusů</label>
                         <input type="number" id="totalCopies" min="1" value="1" required>
                     </div>
-
                     <div class="form-group">
-                        <label for="availableCopies">Dostupných kopií *</label>
+                        <label for="availableCopies">Dostupných kusů</label>
                         <input type="number" id="availableCopies" min="0" value="1" required>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" onclick="closeAddModal()" class="btn-secondary">Zrušit</button>
-                    <button type="button" onclick="addBook()" class="btn-primary">Přidat do katalogu</button>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeAddModal()" class="btn btn-secondary">Zrušit</button>
+                    <button type="button" onclick="addBook()" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Přidat do katalogu
+                    </button>
                 </div>
             </div>
         </div>
@@ -421,49 +444,187 @@ ob_start();
     border-color: var(--text-muted);
 }
 
-/* Search Box in Modal */
-.search-box {
+/* Add Book Modal - New Design */
+.add-book-modal .modal-content {
+    max-width: 650px;
+}
+
+/* Search Container */
+.search-container {
+    margin-bottom: 24px;
+}
+
+.search-label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.search-input-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
 .search-icon {
     position: absolute;
     left: 16px;
-    top: 12px;
     color: var(--text-muted);
     pointer-events: none;
     z-index: 1;
 }
 
-.search-box input {
-    padding-left: 48px !important;
+.search-input {
     width: 100%;
-    font-size: 16px !important;
-    padding-top: 14px !important;
-    padding-bottom: 14px !important;
+    padding: 14px 50px 14px 48px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--background);
+    color: var(--text);
+    font-size: 15px;
+    transition: all 0.3s;
 }
 
-.search-box input::placeholder {
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-input::placeholder {
     color: var(--text-muted);
-    opacity: 0.7;
+    opacity: 0.6;
 }
 
-.search-results {
+.search-loader {
+    position: absolute;
+    right: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.search-hint {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Search Results List */
+.search-results-list {
     display: none;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
-    animation: fadeIn 0.3s ease;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 16px;
+    padding: 4px;
 }
 
-.search-results.active {
-    display: grid;
+.search-results-list.active {
+    display: flex;
+}
+
+/* Custom Scrollbar for Search Results */
+.search-results-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-results-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+}
+
+.search-results-list::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.3);
+    border-radius: 10px;
+}
+
+.search-results-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 126, 234, 0.5);
+}
+
+.search-result-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.search-result-item:hover {
+    background: rgba(102, 126, 234, 0.08);
+    border-color: var(--primary);
+    transform: translateX(4px);
+}
+
+.search-result-item img {
+    width: 50px;
+    height: 75px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-result-info p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-empty,
+.search-error {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* Book Preview Section */
+.book-preview-section {
+    animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
@@ -471,74 +632,193 @@ ob_start();
     }
 }
 
-.search-result-item {
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
     background: rgba(255, 255, 255, 0.03);
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.search-result-item:hover {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-}
-
-.search-result-item img {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.search-result-info h4 {
-    margin: 0 0 8px 0;
     color: var(--text);
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    min-height: 42px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
 }
 
-.search-result-info p {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 13px;
-    line-height: 1.5;
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary);
+    transform: translateX(-2px);
 }
 
-/* Book Preview Card */
-.book-preview-card {
+.selected-book-card {
     display: flex;
     gap: 20px;
     padding: 20px;
     background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
-    margin-bottom: 20px;
     border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 24px;
 }
 
-.preview-info h3 {
-    margin: 0 0 8px 0;
+.book-cover-wrapper {
+    flex-shrink: 0;
+}
+
+.book-cover-wrapper img {
+    width: 100px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.book-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.book-details h3 {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+    font-weight: 700;
     color: var(--text);
+    line-height: 1.3;
 }
 
-.preview-info p {
-    margin: 4px 0;
-    color: var(--text-muted);
+.book-author {
+    margin: 0 0 12px 0;
     font-size: 14px;
+    color: var(--text-muted);
+}
+
+.book-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.book-description {
+    margin: 16px 0 0 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.book-description:empty {
+    display: none;
+}
+
+/* Custom scrollbar for description */
+.book-description::-webkit-scrollbar {
+    width: 6px;
+}
+
+.book-description::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+}
+
+.book-description::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.3);
+    border-radius: 6px;
+}
+
+.book-description::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 126, 234, 0.5);
+}
+
+.genre-badge,
+.year-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.genre-badge {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+
+.year-badge {
+    background: rgba(250, 204, 21, 0.15);
+    color: #facc15;
+}
+
+/* Stock Form */
+.stock-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stock-form .form-group {
+    margin-bottom: 0;
+}
+
+.stock-form label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.stock-form input {
+    padding: 12px 14px;
+    font-size: 15px;
+}
+
+/* Modal Actions */
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: var(--background);
+    color: var(--text);
+    border: 2px solid var(--border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 /* Book Info Read-only */
@@ -630,26 +910,39 @@ ob_start();
         padding: 20px;
     }
 
-    .book-preview-card {
+    /* Add Book Modal Responsive */
+    .add-book-modal .modal-content {
+        max-width: 95%;
+        max-height: 95vh;
+    }
+
+    .selected-book-card {
         flex-direction: column;
-        align-items: center;
         text-align: center;
     }
 
-    .search-results {
+    .book-cover-wrapper {
+        margin: 0 auto;
+    }
+
+    .book-meta {
+        justify-content: center;
+    }
+
+    .stock-form {
         grid-template-columns: 1fr;
     }
-}
 
-@media (min-width: 768px) {
-    .search-results {
-        grid-template-columns: repeat(2, 1fr);
+    .modal-actions {
+        flex-direction: column;
     }
-}
 
-@media (min-width: 1200px) {
-    .search-results {
-        grid-template-columns: repeat(3, 1fr);
+    .modal-actions .btn {
+        width: 100%;
+    }
+
+    .search-input {
+        font-size: 16px; /* Prevents zoom on iOS */
     }
 }
 </style>
@@ -759,172 +1052,181 @@ const AdminLazyLoad = {
     }
 };
 
-// ISBN Search Controller
-const ISBNSearch = {
-    timeout: null,
-    selectedBook: null,
+// Book Search Controller (Refactored)
+let selectedBook = null;
+let searchTimeout = null;
 
-    init() {
-        const input = document.getElementById('bookSearch');
-        const resultsDiv = document.getElementById('search-results');
+function initBookSearch() {
+    const input = document.getElementById('bookSearch');
+    const loader = document.getElementById('searchLoader');
+    const resultsDiv = document.getElementById('searchResults');
 
-        input.addEventListener('input', (e) => {
-            const query = e.target.value.trim();
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
 
-            if (query.length < 2) {
-                resultsDiv.classList.remove('active');
-                return;
-            }
-
-            clearTimeout(this.timeout);
-            this.timeout = setTimeout(() => {
-                this.search(query);
-            }, 300);
-        });
-
-        // Close on outside click
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-box')) {
-                resultsDiv.classList.remove('active');
-            }
-        });
-    },
-
-    async search(query) {
-        const resultsDiv = document.getElementById('search-results');
-
-        try {
-            const url = `${BASE_URL}/api/admin/search-books?q=${encodeURIComponent(query)}`;
-            console.log('═════════════════════════════════════');
-            console.log('🔍 SEARCH DEBUG v2.0');
-            console.log('Query:', query);
-            console.log('BASE_URL:', BASE_URL);
-            console.log('Full URL:', url);
-            console.log('═════════════════════════════════════');
-
-            const response = await fetch(url);
-            console.log('Response status:', response.status, response.statusText);
-            console.log('Response ok:', response.ok);
-
-            if (!response.ok) {
-                console.error('❌ API error:', response.status, response.statusText);
-                const text = await response.text();
-                console.error('Response body:', text);
-                resultsDiv.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; color: var(--text-muted); text-align: center;">Chyba API</div>';
-                resultsDiv.classList.add('active');
-                return;
-            }
-
-            const data = await response.json();
-            console.log('✅ API response:', JSON.stringify(data, null, 2));
-            console.log('Items count:', data.items ? data.items.length : 0);
-            console.log('Debug message:', data.debug);
-
-            this.displayResults(data.items || [], data.debug);
-        } catch (error) {
-            console.error('❌ Search error:', error);
-            console.error('Error stack:', error.stack);
-            resultsDiv.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; color: var(--text-muted); text-align: center;">Chyba při vyhledávání</div>';
-            resultsDiv.classList.add('active');
-        }
-    },
-
-    displayResults(items, debug) {
-        console.log('📋 displayResults() called');
-        const resultsDiv = document.getElementById('search-results');
-        console.log('resultsDiv element:', resultsDiv);
-        console.log('Items to display:', items.length);
-
-        if (items.length === 0) {
-            const msg = debug ? `Žádné výsledky (${debug})` : 'Žádné výsledky';
-            resultsDiv.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; color: var(--text-muted); text-align: center; font-size: 16px;">${msg}</div>`;
-            resultsDiv.classList.add('active');
-            console.log('Added .active class (no results)');
-            console.log('resultsDiv classes:', resultsDiv.className);
+        // Clear results if query too short
+        if (query.length < 2) {
+            resultsDiv.classList.remove('active');
+            resultsDiv.innerHTML = '';
             return;
         }
 
-        console.log('Clearing resultsDiv and adding items...');
-        resultsDiv.innerHTML = '';
-        items.forEach((item, index) => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'search-result-item';
-            itemDiv.dataset.bookData = JSON.stringify(item);
+        // Show loader
+        loader.style.display = 'flex';
 
-            // Use placeholder if no thumbnail
-            const thumbnailUrl = item.thumbnail || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="128" height="192" viewBox="0 0 128 192"%3E%3Crect fill="%23e2e8f0" width="128" height="192"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%23475569"%3ENo Image%3C/text%3E%3C/svg%3E';
+        // Debounce search
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchBooks(query);
+        }, 400);
+    });
+}
 
-            itemDiv.innerHTML = `
-                <img src="${escapeHtml(thumbnailUrl)}" alt="Cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22128%22 height=%22192%22%3E%3Crect fill=%22%23e2e8f0%22 width=%22128%22 height=%22192%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23475569%22%3ENo Image%3C/text%3E%3C/svg%3E'">
-                <div class="search-result-info">
-                    <h4>${escapeHtml(item.title)}</h4>
-                    <p>${escapeHtml(item.author)} • ${escapeHtml(item.isbn)}</p>
-                </div>
-            `;
-            itemDiv.addEventListener('click', () => {
-                this.selectBook(item);
-            });
-            resultsDiv.appendChild(itemDiv);
-        });
+async function searchBooks(query) {
+    const loader = document.getElementById('searchLoader');
+    const resultsDiv = document.getElementById('searchResults');
 
-        console.log('All items added. Adding .active class...');
+    try {
+        const url = `${BASE_URL}/api/admin/search-books?q=${encodeURIComponent(query)}`;
+        console.log('🔍 Searching:', query);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ Found:', data.items?.length || 0, 'books');
+
+        displaySearchResults(data.items || []);
+    } catch (error) {
+        console.error('❌ Search error:', error);
+        resultsDiv.innerHTML = '<div class="search-error">Chyba při vyhledávání. Zkuste to znovu.</div>';
         resultsDiv.classList.add('active');
-        console.log('resultsDiv classes:', resultsDiv.className);
-        console.log('resultsDiv display:', window.getComputedStyle(resultsDiv).display);
-        console.log('resultsDiv innerHTML length:', resultsDiv.innerHTML.length);
-    },
+    } finally {
+        loader.style.display = 'none';
+    }
+}
 
-    async selectBook(book) {
-        console.log('📚 selectBook() called for:', book.title);
+function displaySearchResults(items) {
+    const resultsDiv = document.getElementById('searchResults');
 
-        // Check if ISBN already exists
+    if (items.length === 0) {
+        resultsDiv.innerHTML = '<div class="search-empty">Žádné výsledky. Zkuste jiný název nebo ISBN.</div>';
+        resultsDiv.classList.add('active');
+        return;
+    }
+
+    resultsDiv.innerHTML = '';
+    items.forEach(book => {
+        const item = createSearchResultItem(book);
+        resultsDiv.appendChild(item);
+    });
+    resultsDiv.classList.add('active');
+}
+
+function createSearchResultItem(book) {
+    const item = document.createElement('div');
+    item.className = 'search-result-item';
+
+    const placeholder = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2275%22%3E%3Crect fill=%22%23334155%22 width=%2250%22 height=%2275%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2210%22 fill=%22%23cbd5e1%22%3E📚%3C/text%3E%3C/svg%3E';
+    const thumbnail = book.thumbnail || placeholder;
+
+    item.innerHTML = `
+        <img src="${escapeHtml(thumbnail)}" alt="Cover" onerror="this.src='${placeholder}'">
+        <div class="search-result-info">
+            <h4>${escapeHtml(book.title)}</h4>
+            <p>${escapeHtml(book.author || 'Neznámý autor')} • ${escapeHtml(book.isbn)}</p>
+        </div>
+    `;
+
+    item.addEventListener('click', () => selectBook(book));
+    return item;
+}
+
+async function selectBook(book) {
+    console.log('📚 Selected:', book.title);
+
+    // Check ISBN duplicate
+    try {
         const response = await fetch(`${BASE_URL}/api/admin/check-isbn?isbn=${encodeURIComponent(book.isbn)}`);
         const data = await response.json();
-        console.log('ISBN check result:', data);
 
         if (data.exists) {
             window.toast.error('Kniha s tímto ISBN již existuje v katalogu');
             return;
         }
-
-        this.selectedBook = book;
-        console.log('Selected book saved:', this.selectedBook);
-
-        // Hide search section, show preview
-        document.getElementById('searchSection').style.display = 'none';
-        const searchResults = document.getElementById('search-results');
-        searchResults.classList.remove('active');
-
-        const bookPreview = document.getElementById('bookPreview');
-        bookPreview.style.display = 'block';
-        console.log('bookPreview display set to block');
-
-        // Fill preview (with placeholder if no thumbnail)
-        const placeholderSvg = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="128" height="192" viewBox="0 0 128 192"%3E%3Crect fill="%23e2e8f0" width="128" height="192"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%23475569"%3ENo Image%3C/text%3E%3C/svg%3E';
-        document.getElementById('previewThumbnail').src = book.thumbnail || placeholderSvg;
-        document.getElementById('previewTitle').textContent = book.title;
-        document.getElementById('previewAuthor').textContent = book.author;
-        document.getElementById('previewIsbn').textContent = book.isbn;
-        document.getElementById('previewGenre').textContent = book.genre ? `Žánr: ${book.genre}` : '';
-    },
-
-    resetSearch() {
-        // Show search section again
-        document.getElementById('searchSection').style.display = 'block';
-        document.getElementById('bookSearch').value = '';
-        document.getElementById('bookPreview').style.display = 'none';
-        this.selectedBook = null;
-        document.getElementById('bookSearch').focus();
+    } catch (error) {
+        console.error('ISBN check error:', error);
     }
-};
+
+    selectedBook = book;
+
+    // Hide search, show preview
+    document.getElementById('searchSection').style.display = 'none';
+    document.getElementById('searchResults').classList.remove('active');
+    document.getElementById('bookPreview').style.display = 'block';
+
+    // Fill preview (V2)
+    const placeholder = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22150%22%3E%3Crect fill=%22%23334155%22 width=%22100%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2240%22%3E📚%3C/text%3E%3C/svg%3E';
+
+    const thumbnailEl = document.getElementById('previewThumbnailV2');
+    const titleEl = document.getElementById('previewTitleV2');
+    const authorEl = document.getElementById('previewAuthorV2');
+    const isbnEl = document.getElementById('previewIsbnV2');
+
+    if (!thumbnailEl || !titleEl || !authorEl || !isbnEl) {
+        console.error('⚠️ Preview elements not found! DOM:', {
+            thumbnail: !!thumbnailEl,
+            title: !!titleEl,
+            author: !!authorEl,
+            isbn: !!isbnEl
+        });
+        window.toast.error('Chyba: Restartujte Apache a obnovte stránku');
+        return;
+    }
+
+    thumbnailEl.src = book.thumbnail || placeholder;
+    titleEl.textContent = book.title;
+    authorEl.textContent = book.author || 'Neznámý autor';
+    isbnEl.textContent = book.isbn;
+
+    const genreEl = document.getElementById('previewGenreV2');
+    if (book.genre && genreEl) {
+        genreEl.textContent = book.genre;
+        genreEl.style.display = 'inline-block';
+    } else if (genreEl) {
+        genreEl.style.display = 'none';
+    }
+
+    const yearEl = document.getElementById('previewYearV2');
+    if (book.published_year && yearEl) {
+        yearEl.textContent = book.published_year;
+        yearEl.style.display = 'inline-block';
+    } else if (yearEl) {
+        yearEl.style.display = 'none';
+    }
+
+    const descriptionEl = document.getElementById('previewDescriptionV2');
+    if (descriptionEl) {
+        descriptionEl.textContent = book.description || '';
+    }
+}
+
+function resetSearch() {
+    selectedBook = null;
+    document.getElementById('searchSection').style.display = 'block';
+    document.getElementById('bookPreview').style.display = 'none';
+    document.getElementById('bookSearch').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchResults').classList.remove('active');
+    document.getElementById('bookSearch').focus();
+}
 
 // Modal Functions
 function openAddModal() {
-    ISBNSearch.selectedBook = null;
-    document.getElementById('searchSection').style.display = 'block';
-    document.getElementById('bookSearch').value = '';
-    document.getElementById('search-results').classList.remove('active');
-    document.getElementById('bookPreview').style.display = 'none';
+    resetSearch();
     document.getElementById('totalCopies').value = '1';
     document.getElementById('availableCopies').value = '1';
     document.getElementById('addBookModal').classList.add('active');
@@ -933,10 +1235,11 @@ function openAddModal() {
 
 function closeAddModal() {
     document.getElementById('addBookModal').classList.remove('active');
+    resetSearch();
 }
 
 async function addBook() {
-    if (!ISBNSearch.selectedBook) {
+    if (!selectedBook) {
         window.toast.error('Nejprve vyberte knihu');
         return;
     }
@@ -944,31 +1247,34 @@ async function addBook() {
     const totalCopies = parseInt(document.getElementById('totalCopies').value);
     const availableCopies = parseInt(document.getElementById('availableCopies').value);
 
-    if (availableCopies > totalCopies) {
-        window.toast.error('Dostupných kopií nemůže být více než celkem');
+    if (!totalCopies || totalCopies < 1) {
+        window.toast.error('Zadejte platný počet kusů');
+        return;
+    }
+
+    if (availableCopies < 0 || availableCopies > totalCopies) {
+        window.toast.error('Dostupných kusů nemůže být více než celkový počet');
         return;
     }
 
     const data = {
-        ...ISBNSearch.selectedBook,
+        ...selectedBook,
         total_copies: totalCopies,
         available_copies: availableCopies
     };
 
     try {
-        console.log('Adding book:', data);
+        console.log('📤 Adding book:', data.title);
         const response = await fetch(`${BASE_URL}/api/admin/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
 
-        console.log('Response status:', response.status);
-
         if (!response.ok) {
             const text = await response.text();
             console.error('Server error:', response.status, text);
-            window.toast.error('Server error: ' + response.status);
+            window.toast.error(`Chyba serveru: ${response.status}`);
             return;
         }
 
@@ -1122,7 +1428,7 @@ function escapeHtml(text) {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     AdminLazyLoad.init();
-    ISBNSearch.init();
+    initBookSearch();
 });
 
 // Close modals on ESC

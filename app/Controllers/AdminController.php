@@ -175,7 +175,7 @@ class AdminController {
         }
 
         // Search in Google Books API using cURL (more reliable than file_get_contents)
-        $url = GOOGLE_BOOKS_API . "?q=" . urlencode($query) . "&maxResults=10&langRestrict=cs";
+        $url = GOOGLE_BOOKS_API . "?q=" . urlencode($query) . "&maxResults=20&key=" . GOOGLE_BOOKS_API_KEY;
 
         error_log("Google Books API URL: $url");
 
@@ -195,7 +195,17 @@ class AdminController {
 
         if (!$response || $httpCode !== 200) {
             error_log("Google Books API failed: HTTP $httpCode, Error: $error");
-            jsonResponse(['items' => [], 'debug' => "API Error: HTTP $httpCode"]);
+            error_log("Response body: " . substr($response, 0, 1000));
+
+            // Try to decode error message from Google
+            $errorData = json_decode($response, true);
+            $errorMsg = "API Error: HTTP $httpCode";
+            if (isset($errorData['error']['message'])) {
+                $errorMsg .= " - " . $errorData['error']['message'];
+                error_log("Google API Error: " . $errorData['error']['message']);
+            }
+
+            jsonResponse(['items' => [], 'debug' => $errorMsg]);
             return;
         }
 
