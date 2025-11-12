@@ -265,7 +265,7 @@ class AdminController {
             if (!empty($volumeInfo['imageLinks']['thumbnail'])) {
                 $thumbnail = str_replace('http://', 'https://', $volumeInfo['imageLinks']['thumbnail']);
                 $thumbnail = preg_replace('/[&?]zoom=\d+/', '', $thumbnail);
-                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=0';
+                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=1';
             }
 
             $items[] = [

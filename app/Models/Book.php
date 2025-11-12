@@ -381,11 +381,11 @@ class Book {
                 $thumbnail = $book['imageLinks']['smallThumbnail'];
             }
 
-            // Upgrade to maximum resolution by changing zoom parameter
+            // Optimize image size by changing zoom parameter
             if ($thumbnail) {
-                // Remove existing zoom parameter and add zoom=0 for highest quality
+                // Remove existing zoom parameter and add zoom=1 for medium quality (better performance)
                 $thumbnail = preg_replace('/[&?]zoom=\d+/', '', $thumbnail);
-                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=0';
+                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=1';
 
                 // Convert HTTP to HTTPS to avoid mixed content warnings in browsers
                 $thumbnail = str_replace('http://', 'https://', $thumbnail);
@@ -399,7 +399,7 @@ class Book {
             'thumbnail' => $thumbnail,
             'published_date' => $book['publishedDate'] ?? null,
             'page_count' => $book['pageCount'] ?? null,
-            'source' => 'Google Books (zoom=0)',
+            'source' => 'Google Books (zoom=1)',
         ];
 
         // DEBUG: Log final result

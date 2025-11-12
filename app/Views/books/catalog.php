@@ -261,7 +261,7 @@ ob_start();
                     <?php endif; ?>
 
                     <div class="book-info">
-                        <h3 class="book-title"><?= e($book['title']) ?></h3>
+                        <h2 class="book-title"><?= e($book['title']) ?></h2>
                         <p class="book-author"><?= e($book['author']) ?></p>
 
                         <div class="book-meta">
@@ -515,7 +515,7 @@ const paginator = new Paginator({
                 <a href="<?= BASE_URL ?>/kniha/${escapeHtml(book.slug)}">
                     ${thumbnail}
                     <div class="book-info">
-                        <h3 class="book-title">${escapeHtml(book.title)}</h3>
+                        <h2 class="book-title">${escapeHtml(book.title)}</h2>
                         <p class="book-author">${escapeHtml(book.author)}</p>
                         <div class="book-meta">
                             <span class="badge badge-genre">${escapeHtml(book.genre)}</span>

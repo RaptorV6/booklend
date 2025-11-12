@@ -312,8 +312,9 @@ main {
 }
 
 .badge-available {
-    background: rgba(16, 185, 129, 0.2);
+    background: rgba(16, 185, 129, 0.25);
     color: var(--success);
+    font-weight: 600;
 }
 
 .badge-unavailable {

@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <a href="${getBaseUrl()}/kniha/${escapeHtml(book.slug)}">
                     ${coverHtml}
                     <div class="book-info">
-                        <h3 class="book-title">${escapeHtml(book.title)}</h3>
+                        <h2 class="book-title">${escapeHtml(book.title)}</h2>
                         <p class="book-author">${escapeHtml(book.author)}</p>
                         <div class="book-meta">
                             ${availableBadge}
