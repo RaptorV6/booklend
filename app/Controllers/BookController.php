@@ -217,6 +217,7 @@ class BookController {
         $hasMore = ($page * $limit) < $total;
 
         jsonResponse([
+            'success' => true,
             'books' => $books,
             'page' => $page,
             'limit' => $limit,

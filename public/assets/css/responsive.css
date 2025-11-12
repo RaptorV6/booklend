@@ -147,14 +147,17 @@
 .catalog-controls {
     margin-bottom: 2rem;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 16px;
+    align-items: flex-start;
 }
 
 /* Search Box - Full Width */
 .search-box {
     position: relative;
     width: 100%;
+    flex: 0 0 100%;
 }
 
 .search-icon {
@@ -189,6 +192,12 @@
     gap: 12px;
     flex-wrap: wrap;
     align-items: center;
+    flex: 1;
+}
+
+/* Active Filters - Full Width Below */
+.active-filters {
+    flex: 0 0 100%;
 }
 
 /* Individual Filter Chip Wrapper */
@@ -724,6 +733,21 @@
         padding: 12px 0;
     }
 
+    /* Mobile Catalog Controls */
+    .catalog-controls {
+        flex-direction: column;
+    }
+
+    #pagination-controls {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .pagination-controls {
+        width: 100%;
+        justify-content: center;
+    }
+
     /* Mobile Filter Chips */
     .filter-chips {
         overflow-x: auto;
@@ -731,6 +755,7 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         padding-bottom: 4px;
+        flex: 1 0 100%;
     }
 
     .filter-chips::-webkit-scrollbar {

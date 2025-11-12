@@ -44,25 +44,27 @@ ob_start();
     <div class="book-detail">
         <div class="detail-cover">
             <?php if (!empty($book['thumbnail'])): ?>
-                <img
-                    src="<?= e($book['thumbnail']) ?>"
-                    alt="<?= e($book['title']) ?>"
-                    loading="eager"
-                    onload="this.classList.add('loaded'); this.style.opacity='1'; const loader = this.parentElement.querySelector('.book-loading'); if(loader) loader.classList.add('hidden');"
-                    style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
-                >
-                <!-- Loading Animation -->
-                <div class="book-loading">
-                    <div class="book-loading-animation">
-                        <div class="book-icon">
-                            <div class="book-cover-left"></div>
-                            <div class="book-pages">
-                                <div class="page"></div>
-                                <div class="page"></div>
-                                <div class="page"></div>
+                <div style="position: relative; width: 100%; height: 100%;">
+                    <img
+                        src="<?= e($book['thumbnail']) ?>"
+                        alt="<?= e($book['title']) ?>"
+                        loading="eager"
+                        onload="this.classList.add('loaded'); this.style.opacity='1'; const loader = this.parentElement.querySelector('.book-loading'); if(loader) loader.classList.add('hidden');"
+                        style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
+                    >
+                    <!-- Loading Animation -->
+                    <div class="book-loading">
+                        <div class="book-loading-animation">
+                            <div class="book-icon">
+                                <div class="book-cover-left"></div>
+                                <div class="book-pages">
+                                    <div class="page"></div>
+                                    <div class="page"></div>
+                                    <div class="page"></div>
+                                </div>
                             </div>
+                            <div class="book-loading-text">Načítání...</div>
                         </div>
-                        <div class="book-loading-text">Načítání...</div>
                     </div>
                 </div>
             <?php else: ?>

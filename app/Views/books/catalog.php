@@ -173,7 +173,15 @@ ob_start();
                         <h3>Seřadit podle</h3>
                     </div>
                     <div class="chip-dropdown-content">
-                        <?php $currentSort = $currentFilters['sort'] ?? 'title-asc'; ?>
+                        <?php $currentSort = $currentFilters['sort'] ?? 'newest'; ?>
+                        <label class="chip-option">
+                            <input type="radio" name="sort" value="newest" <?= $currentSort === 'newest' ? 'checked' : '' ?>>
+                            <span>Nejnovější</span>
+                        </label>
+                        <label class="chip-option">
+                            <input type="radio" name="sort" value="oldest" <?= $currentSort === 'oldest' ? 'checked' : '' ?>>
+                            <span>Nejstarší</span>
+                        </label>
                         <label class="chip-option">
                             <input type="radio" name="sort" value="title-asc" <?= $currentSort === 'title-asc' ? 'checked' : '' ?>>
                             <span>Název (A-Z)</span>
@@ -190,6 +198,14 @@ ob_start();
                             <input type="radio" name="sort" value="author-desc" <?= $currentSort === 'author-desc' ? 'checked' : '' ?>>
                             <span>Autor (Z-A)</span>
                         </label>
+                        <label class="chip-option">
+                            <input type="radio" name="sort" value="year-asc" <?= $currentSort === 'year-asc' ? 'checked' : '' ?>>
+                            <span>Rok (vzestupně)</span>
+                        </label>
+                        <label class="chip-option">
+                            <input type="radio" name="sort" value="year-desc" <?= $currentSort === 'year-desc' ? 'checked' : '' ?>>
+                            <span>Rok (sestupně)</span>
+                        </label>
                     </div>
                     <div class="chip-dropdown-footer">
                         <button class="chip-apply" data-filter="sort">Použít</button>
@@ -197,6 +213,9 @@ ob_start();
                 </div>
             </div>
         </div>
+
+        <!-- Pagination Controls (inline with filters) -->
+        <div id="pagination-controls"></div>
 
         <!-- Active Filters Display (separate row) -->
         <div class="active-filters" id="active-filters"></div>
@@ -259,139 +278,206 @@ ob_start();
         <?php endforeach; ?>
     </div>
 
-    <!-- Loading Sentinel for Infinite Scroll -->
-    <div id="loading-sentinel" style="height: 20px;"></div>
-
-    <!-- Loading Indicator -->
-    <div id="loading-more" class="loading-more" style="display: none;">
-        <div class="book-loading-animation">
-            <div class="book">
-                <div class="book-left"></div>
-                <div class="book-page"></div>
-                <div class="book-page"></div>
-                <div class="book-page"></div>
-                <div class="book-right"></div>
-            </div>
-        </div>
-        <p>Načítání dalších knih...</p>
-    </div>
-
-    <!-- No More Books -->
-    <div id="no-more-books" style="display: none; text-align: center; padding: 40px; color: #94a3b8;">
-        <p>To je všechno! Žádné další knihy.</p>
-    </div>
+    <!-- Pagination (Bottom) -->
+    <div id="pagination"></div>
 </div>
 
+<!-- Include Pagination CSS & JS -->
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/pagination.css">
+
+<script src="<?= BASE_URL ?>/assets/js/pagination.js"></script>
 <script>
-// Lazy Loading Controller
-const LazyLoadController = {
-    currentPage: <?= $pagination['currentPage'] ?>,
-    hasMore: <?= $pagination['hasNext'] ? 'true' : 'false' ?>,
-    loading: false,
-    currentGenre: '<?= $genre ?? '' ?>',
-
+// Filter Dropdown Controller
+const FilterController = {
     init() {
-        this.setupIntersectionObserver();
         this.setupFilterDropdown();
-        this.setupImageLoading();
     },
 
-    setupIntersectionObserver() {
-        const sentinel = document.getElementById('loading-sentinel');
-        const options = {
-            root: null,
-            rootMargin: '200px',
-            threshold: 0.1
-        };
+    setupFilterDropdown() {
+        // Genre Chip
+        const genreChip = document.getElementById('genre-chip');
+        const genreDropdown = document.getElementById('genre-dropdown');
+        const genreBadge = document.getElementById('genre-badge');
+        const genreApplyBtn = genreDropdown?.querySelector('.chip-apply');
+        const genreClearBtn = genreDropdown?.querySelector('.chip-clear');
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && this.hasMore && !this.loading) {
-                    this.loadMore();
-                }
-            });
-        }, options);
+        // Year Chip
+        const yearChip = document.getElementById('year-chip');
+        const yearDropdown = document.getElementById('year-dropdown');
+        const yearBadge = document.getElementById('year-badge');
+        const yearApplyBtn = yearDropdown?.querySelector('.chip-apply');
+        const yearClearBtn = yearDropdown?.querySelector('.chip-clear');
 
-        observer.observe(sentinel);
+        // Sort Chip
+        const sortChip = document.getElementById('sort-chip');
+        const sortDropdown = document.getElementById('sort-dropdown');
+        const sortApplyBtn = sortDropdown?.querySelector('.chip-apply');
+
+        // Toggle genre dropdown
+        genreChip?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            yearDropdown?.classList.remove('active');
+            yearChip?.classList.remove('active');
+            sortDropdown?.classList.remove('active');
+            sortChip?.classList.remove('active');
+            genreDropdown.classList.toggle('active');
+            genreChip.classList.toggle('active');
+        });
+
+        // Toggle year dropdown
+        yearChip?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            genreDropdown?.classList.remove('active');
+            genreChip?.classList.remove('active');
+            sortDropdown?.classList.remove('active');
+            sortChip?.classList.remove('active');
+            yearDropdown.classList.toggle('active');
+            yearChip.classList.toggle('active');
+        });
+
+        // Toggle sort dropdown
+        sortChip?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            genreDropdown?.classList.remove('active');
+            genreChip?.classList.remove('active');
+            yearDropdown?.classList.remove('active');
+            yearChip?.classList.remove('active');
+            sortDropdown.classList.toggle('active');
+            sortChip.classList.toggle('active');
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            const isChip = e.target.closest('.filter-chip');
+            const isDropdown = e.target.closest('.chip-dropdown');
+
+            if (!isChip && !isDropdown) {
+                document.querySelectorAll('.chip-dropdown').forEach(d => d.classList.remove('active'));
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            }
+        });
+
+        // Apply genre filters
+        genreApplyBtn?.addEventListener('click', () => this.applyFilters());
+
+        // Clear genre filters
+        genreClearBtn?.addEventListener('click', () => {
+            genreDropdown.querySelectorAll('input[name="genres[]"]').forEach(cb => cb.checked = false);
+            this.updateGenreBadge();
+        });
+
+        // Update badge on checkbox change
+        genreDropdown?.querySelectorAll('input[name="genres[]"]').forEach(cb => {
+            cb.addEventListener('change', () => this.updateGenreBadge());
+        });
+
+        // Initialize badge
+        this.updateGenreBadge();
+
+        // Apply year filters
+        yearApplyBtn?.addEventListener('click', () => this.applyFilters());
+
+        // Clear year filters
+        yearClearBtn?.addEventListener('click', () => {
+            yearDropdown.querySelectorAll('input[name="years[]"]').forEach(cb => cb.checked = false);
+            this.updateYearBadge();
+        });
+
+        // Update year badge on checkbox change
+        yearDropdown?.querySelectorAll('input[name="years[]"]').forEach(cb => {
+            cb.addEventListener('change', () => this.updateYearBadge());
+        });
+
+        // Initialize year badge
+        this.updateYearBadge();
+
+        // Apply sort
+        sortApplyBtn?.addEventListener('click', () => this.applyFilters());
     },
 
-    async loadMore() {
-        if (this.loading || !this.hasMore) return;
+    applyFilters() {
+        const url = new URL(window.location.href);
+        url.search = '';
 
-        this.loading = true;
-        document.getElementById('loading-more').style.display = 'flex';
+        // Genre filter - hyphen-separated
+        const selectedGenres = Array.from(
+            document.querySelectorAll('input[name="genres[]"]:checked')
+        ).map(cb => cb.value);
+        if (selectedGenres.length > 0) {
+            url.searchParams.set('zanr', selectedGenres.join('-'));
+        }
 
-        try {
-            const nextPage = this.currentPage + 1;
+        // Year filter - hyphen-separated
+        const selectedYears = Array.from(
+            document.querySelectorAll('input[name="years[]"]:checked')
+        ).map(cb => cb.value);
+        if (selectedYears.length > 0) {
+            url.searchParams.set('rok', selectedYears.join('-'));
+        }
 
-            // Build URL with all current filters from URL params
-            const currentUrl = new URL(window.location.href);
-            const apiUrl = new URL('<?= BASE_URL ?>/api/books');
-            apiUrl.searchParams.set('page', nextPage);
-            apiUrl.searchParams.set('limit', 12);
+        // Sort filter
+        const selectedSort = document.querySelector('input[name="sort"]:checked')?.value;
+        if (selectedSort && selectedSort !== 'newest') {
+            url.searchParams.set('sort', selectedSort);
+        }
 
-            // Copy all filter params from current URL (Czech parameter names)
-            // Values are hyphen-separated: ?zanr=Fantasy-Horor
-            const zanrValue = currentUrl.searchParams.get('zanr');
-            if (zanrValue) {
-                apiUrl.searchParams.set('zanr', zanrValue);
-            }
+        window.location.href = url.toString();
+    },
 
-            const rokValue = currentUrl.searchParams.get('rok');
-            if (rokValue) {
-                apiUrl.searchParams.set('rok', rokValue);
-            }
+    updateGenreBadge() {
+        const genreDropdown = document.getElementById('genre-dropdown');
+        const genreBadge = document.getElementById('genre-badge');
+        const selectedCount = genreDropdown?.querySelectorAll('input[name="genres[]"]:checked').length || 0;
 
-            const sortValue = currentUrl.searchParams.get('sort');
-            if (sortValue) {
-                apiUrl.searchParams.set('sort', sortValue);
-            }
-
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-
-            if (data.books && data.books.length > 0) {
-                this.appendBooks(data.books);
-                this.currentPage = nextPage;
-                this.hasMore = data.hasMore;
-
-                if (!this.hasMore) {
-                    document.getElementById('no-more-books').style.display = 'block';
-                }
-            } else {
-                this.hasMore = false;
-                document.getElementById('no-more-books').style.display = 'block';
-            }
-        } catch (error) {
-            console.error('Error loading more books:', error);
-            window.toast.error('Chyba při načítání knih');
-        } finally {
-            this.loading = false;
-            document.getElementById('loading-more').style.display = 'none';
+        if (selectedCount > 0) {
+            genreBadge.textContent = selectedCount;
+            genreBadge.style.display = 'inline-block';
+        } else {
+            genreBadge.style.display = 'none';
         }
     },
 
-    appendBooks(books) {
-        const grid = document.getElementById('book-grid');
+    updateYearBadge() {
+        const yearDropdown = document.getElementById('year-dropdown');
+        const yearBadge = document.getElementById('year-badge');
+        const selectedCount = yearDropdown?.querySelectorAll('input[name="years[]"]:checked').length || 0;
 
-        books.forEach(book => {
-            const card = this.createBookCard(book);
-            grid.appendChild(card);
-        });
+        if (selectedCount > 0) {
+            yearBadge.textContent = selectedCount;
+            yearBadge.style.display = 'inline-block';
+        } else {
+            yearBadge.style.display = 'none';
+        }
+    }
+};
 
-        // Re-setup image loading for new cards
-        this.setupImageLoading();
-    },
+// Get current filters from URL
+const currentUrl = new URL(window.location.href);
+const filters = {};
 
-    createBookCard(book) {
-        const card = document.createElement('div');
-        card.className = 'book-card';
+const zanrValue = currentUrl.searchParams.get('zanr');
+if (zanrValue) filters.zanr = zanrValue;
 
+const rokValue = currentUrl.searchParams.get('rok');
+if (rokValue) filters.rok = rokValue;
+
+const sortValue = currentUrl.searchParams.get('sort');
+if (sortValue) filters.sort = sortValue;
+
+// Initialize Paginator
+const paginator = new Paginator({
+    apiEndpoint: '<?= BASE_URL ?>/api/books',
+    containerSelector: '#book-grid',
+    controlsSelector: '#pagination-controls',
+    paginationSelector: '#pagination',
+    defaultPerPage: 12,
+    filters: filters,
+    renderItem: (book) => {
         const thumbnail = book.thumbnail ? `
             <div class="book-cover">
                 <img
-                    src="${this.escapeHtml(book.thumbnail)}"
-                    alt="${this.escapeHtml(book.title)}"
+                    src="${escapeHtml(book.thumbnail)}"
+                    alt="${escapeHtml(book.title)}"
                     loading="lazy"
                     onload="this.classList.add('loaded'); this.style.opacity='1'; const loader = this.parentElement.querySelector('.book-loading'); if(loader) loader.classList.add('hidden');"
                     style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"
@@ -424,233 +510,34 @@ const LazyLoadController = {
             ? `<span class="badge badge-available">Dostupné (${book.available_copies})</span>`
             : `<span class="badge badge-unavailable">Vypůjčeno</span>`;
 
-        card.innerHTML = `
-            <a href="<?= BASE_URL ?>/kniha/${this.escapeHtml(book.slug)}">
-                ${thumbnail}
-                <div class="book-info">
-                    <h3 class="book-title">${this.escapeHtml(book.title)}</h3>
-                    <p class="book-author">${this.escapeHtml(book.author)}</p>
-                    <div class="book-meta">
-                        <span class="badge badge-genre">${this.escapeHtml(book.genre)}</span>
-                        ${available}
+        return `
+            <div class="book-card">
+                <a href="<?= BASE_URL ?>/kniha/${escapeHtml(book.slug)}">
+                    ${thumbnail}
+                    <div class="book-info">
+                        <h3 class="book-title">${escapeHtml(book.title)}</h3>
+                        <p class="book-author">${escapeHtml(book.author)}</p>
+                        <div class="book-meta">
+                            <span class="badge badge-genre">${escapeHtml(book.genre)}</span>
+                            ${available}
+                        </div>
                     </div>
-                </div>
-            </a>
+                </a>
+            </div>
         `;
-
-        return card;
-    },
-
-    setupFilterDropdown() {
-        // Genre Chip
-        const genreChip = document.getElementById('genre-chip');
-        const genreDropdown = document.getElementById('genre-dropdown');
-        const genreBadge = document.getElementById('genre-badge');
-        const genreApplyBtn = genreDropdown?.querySelector('.chip-apply');
-        const genreClearBtn = genreDropdown?.querySelector('.chip-clear');
-
-        // Year Chip
-        const yearChip = document.getElementById('year-chip');
-        const yearDropdown = document.getElementById('year-dropdown');
-        const yearBadge = document.getElementById('year-badge');
-        const yearApplyBtn = yearDropdown?.querySelector('.chip-apply');
-        const yearClearBtn = yearDropdown?.querySelector('.chip-clear');
-
-        // Sort Chip
-        const sortChip = document.getElementById('sort-chip');
-        const sortDropdown = document.getElementById('sort-dropdown');
-        const sortApplyBtn = sortDropdown?.querySelector('.chip-apply');
-
-        // Toggle genre dropdown
-        genreChip?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Close other dropdowns
-            yearDropdown?.classList.remove('active');
-            yearChip?.classList.remove('active');
-            sortDropdown?.classList.remove('active');
-            sortChip?.classList.remove('active');
-            // Toggle this one
-            genreDropdown.classList.toggle('active');
-            genreChip.classList.toggle('active');
-        });
-
-        // Toggle year dropdown
-        yearChip?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Close other dropdowns
-            genreDropdown?.classList.remove('active');
-            genreChip?.classList.remove('active');
-            sortDropdown?.classList.remove('active');
-            sortChip?.classList.remove('active');
-            // Toggle this one
-            yearDropdown.classList.toggle('active');
-            yearChip.classList.toggle('active');
-        });
-
-        // Toggle sort dropdown
-        sortChip?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Close other dropdowns
-            genreDropdown?.classList.remove('active');
-            genreChip?.classList.remove('active');
-            yearDropdown?.classList.remove('active');
-            yearChip?.classList.remove('active');
-            // Toggle this one
-            sortDropdown.classList.toggle('active');
-            sortChip.classList.toggle('active');
-        });
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', (e) => {
-            const isChip = e.target.closest('.filter-chip');
-            const isDropdown = e.target.closest('.chip-dropdown');
-
-            if (!isChip && !isDropdown) {
-                document.querySelectorAll('.chip-dropdown').forEach(d => d.classList.remove('active'));
-                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-            }
-        });
-
-        // Apply genre filters
-        genreApplyBtn?.addEventListener('click', () => {
-            this.applyFilters();
-        });
-
-        // Clear genre filters
-        genreClearBtn?.addEventListener('click', () => {
-            genreDropdown.querySelectorAll('input[name="genres[]"]').forEach(cb => {
-                cb.checked = false;
-            });
-            this.updateGenreBadge();
-        });
-
-        // Update badge on checkbox change
-        genreDropdown?.querySelectorAll('input[name="genres[]"]').forEach(cb => {
-            cb.addEventListener('change', () => this.updateGenreBadge());
-        });
-
-        // Initialize badge
-        this.updateGenreBadge();
-
-        // Apply year filters
-        yearApplyBtn?.addEventListener('click', () => {
-            this.applyFilters();
-        });
-
-        // Clear year filters
-        yearClearBtn?.addEventListener('click', () => {
-            yearDropdown.querySelectorAll('input[name="years[]"]').forEach(cb => {
-                cb.checked = false;
-            });
-            this.updateYearBadge();
-        });
-
-        // Update year badge on checkbox change
-        yearDropdown?.querySelectorAll('input[name="years[]"]').forEach(cb => {
-            cb.addEventListener('change', () => this.updateYearBadge());
-        });
-
-        // Initialize year badge
-        this.updateYearBadge();
-
-        // Apply sort
-        sortApplyBtn?.addEventListener('click', () => {
-            this.applyFilters();
-        });
-    },
-
-    applyFilters() {
-        const url = new URL(window.location.href);
-        url.search = ''; // Clear existing params
-
-        // Genre filter - support multiple values (hyphen-separated, RFC 3986 unreserved = no encoding)
-        const selectedGenres = Array.from(
-            document.querySelectorAll('input[name="genres[]"]:checked')
-        ).map(cb => cb.value);
-        if (selectedGenres.length > 0) {
-            url.searchParams.set('zanr', selectedGenres.join('-'));
-        }
-
-        // Year filter - support multiple values (hyphen-separated, RFC 3986 unreserved = no encoding)
-        const selectedYears = Array.from(
-            document.querySelectorAll('input[name="years[]"]:checked')
-        ).map(cb => cb.value);
-        if (selectedYears.length > 0) {
-            url.searchParams.set('rok', selectedYears.join('-'));
-        }
-
-        // Sort filter
-        const selectedSort = document.querySelector('input[name="sort"]:checked')?.value;
-        if (selectedSort && selectedSort !== 'title-asc') { // Don't add default
-            url.searchParams.set('sort', selectedSort);
-        }
-
-        window.location.href = url.toString();
-    },
-
-    updateGenreBadge() {
-        const genreDropdown = document.getElementById('genre-dropdown');
-        const genreBadge = document.getElementById('genre-badge');
-
-        const selectedCount = genreDropdown?.querySelectorAll('input[name="genres[]"]:checked').length || 0;
-
-        if (selectedCount > 0) {
-            genreBadge.textContent = selectedCount;
-            genreBadge.style.display = 'inline-block';
-        } else {
-            genreBadge.style.display = 'none';
-        }
-    },
-
-    updateYearBadge() {
-        const yearDropdown = document.getElementById('year-dropdown');
-        const yearBadge = document.getElementById('year-badge');
-
-        const selectedCount = yearDropdown?.querySelectorAll('input[name="years[]"]:checked').length || 0;
-
-        if (selectedCount > 0) {
-            yearBadge.textContent = selectedCount;
-            yearBadge.style.display = 'inline-block';
-        } else {
-            yearBadge.style.display = 'none';
-        }
-    },
-
-    setupImageLoading() {
-        const images = document.querySelectorAll('.book-cover img:not(.loaded)');
-
-        images.forEach(img => {
-            img.addEventListener('load', function() {
-                this.style.opacity = '1';
-                this.classList.add('loaded');
-                const loader = this.parentElement.querySelector('.book-loading');
-                if (loader) {
-                    loader.classList.add('hidden');
-                }
-            });
-
-            // Hide loader if image is already cached/loaded
-            if (img.complete) {
-                img.style.opacity = '1';
-                img.classList.add('loaded');
-                const loader = img.parentElement.querySelector('.book-loading');
-                if (loader) {
-                    loader.classList.add('hidden');
-                }
-            }
-        });
-    },
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
-};
+});
+
+// Helper function
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    LazyLoadController.init();
+    FilterController.init();
 });
 </script>
 

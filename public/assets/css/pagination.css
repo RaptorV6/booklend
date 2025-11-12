@@ -4,14 +4,14 @@
 
 /* Top Controls */
 .pagination-controls {
-    display: flex;
+    display: inline-flex;
     justify-content: flex-end;
     align-items: center;
-    margin-bottom: 20px;
-    padding: 12px 16px;
+    padding: 10px 16px;
     background: var(--surface);
     border-radius: 12px;
     border: 1px solid var(--border);
+    margin-left: auto;
 }
 
 .per-page-label {
