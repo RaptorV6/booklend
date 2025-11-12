@@ -140,8 +140,30 @@ class AdminController {
         $page = (int)($_GET['page'] ?? 1);
         $limit = (int)($_GET['limit'] ?? 20);
 
-        $books = $this->bookModel->paginate($page, $limit);
-        $total = $this->bookModel->getTotalCount();
+        // Build filters from query parameters
+        $filters = [];
+
+        if (!empty($_GET['sort'])) {
+            // SECURITY: Whitelist allowed sort values (column-direction format)
+            $allowedSorts = [
+                'id-asc', 'id-desc',
+                'title-asc', 'title-desc',
+                'author-asc', 'author-desc',
+                'year-asc', 'year-desc'
+            ];
+            if (in_array($_GET['sort'], $allowedSorts, true)) {
+                $filters['sort'] = $_GET['sort'];
+            } else {
+                // Default to id-desc if invalid sort provided
+                $filters['sort'] = 'id-desc';
+            }
+        } else {
+            // Default sort: newest books first (by id descending)
+            $filters['sort'] = 'id-desc';
+        }
+
+        $books = $this->bookModel->paginate($page, $limit, $filters);
+        $total = $this->bookModel->getTotalCount($filters);
 
         jsonResponse([
             'success' => true,
@@ -149,7 +171,8 @@ class AdminController {
             'page' => $page,
             'limit' => $limit,
             'total' => $total,
-            'hasMore' => ($page * $limit) < $total
+            'hasMore' => ($page * $limit) < $total,
+            'filters' => $filters
         ]);
     }
 

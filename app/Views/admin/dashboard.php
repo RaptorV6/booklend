@@ -15,68 +15,48 @@ ob_start();
         <button class="btn-primary" onclick="openAddModal()">+ Přidat knihu</button>
     </div>
 
-    <!-- Admin Controls -->
-    <div class="admin-controls">
-        <!-- Sort Filter -->
-        <div class="filter-chip-wrapper">
-            <button class="filter-chip" id="admin-sort-chip">
-                <span id="admin-sort-label">Nejnovější</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-
-            <div class="chip-dropdown" id="admin-sort-dropdown">
-                <div class="chip-dropdown-header">
-                    <h3>Řadit podle</h3>
-                </div>
-                <div class="chip-dropdown-content">
-                    <label class="chip-option">
-                        <input type="radio" name="admin-sort" value="newest" checked>
-                        <span>Nejnovější</span>
-                    </label>
-                    <label class="chip-option">
-                        <input type="radio" name="admin-sort" value="oldest">
-                        <span>Nejstarší</span>
-                    </label>
-                    <label class="chip-option">
-                        <input type="radio" name="admin-sort" value="title-asc">
-                        <span>Název (A-Z)</span>
-                    </label>
-                    <label class="chip-option">
-                        <input type="radio" name="admin-sort" value="title-desc">
-                        <span>Název (Z-A)</span>
-                    </label>
-                    <label class="chip-option">
-                        <input type="radio" name="admin-sort" value="author-asc">
-                        <span>Autor (A-Z)</span>
-                    </label>
-                    <label class="chip-option">
-                        <input type="radio" name="admin-sort" value="author-desc">
-                        <span>Autor (Z-A)</span>
-                    </label>
-                </div>
-                <div class="chip-dropdown-footer">
-                    <button class="chip-apply" id="admin-sort-apply">Použít</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pagination Controls (inline) -->
-        <div id="pagination-controls"></div>
-    </div>
+    <!-- Pagination Controls (right-aligned) -->
+    <div id="pagination-controls" style="margin-bottom: 20px; display: flex; justify-content: flex-end;"></div>
 
     <!-- Responzivní tabulka wrapper -->
     <div class="admin-table-wrapper">
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Název</th>
-                    <th>Autor</th>
+                    <th class="sortable active desc" data-sort="id">
+                        ID
+                        <span class="sort-indicator">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                                <path d="M6 9L2 5h8z"/>
+                            </svg>
+                        </span>
+                    </th>
+                    <th class="sortable" data-sort="title">
+                        Název
+                        <span class="sort-indicator">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                                <path d="M6 3L2 7h8z"/>
+                            </svg>
+                        </span>
+                    </th>
+                    <th class="sortable" data-sort="author">
+                        Autor
+                        <span class="sort-indicator">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                                <path d="M6 3L2 7h8z"/>
+                            </svg>
+                        </span>
+                    </th>
                     <th>ISBN</th>
                     <th>Žánr</th>
-                    <th>Rok</th>
+                    <th class="sortable" data-sort="year">
+                        Rok
+                        <span class="sort-indicator">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                                <path d="M6 3L2 7h8z"/>
+                            </svg>
+                        </span>
+                    </th>
                     <th>Kopie</th>
                     <th>Akce</th>
                 </tr>
@@ -228,7 +208,7 @@ ob_start();
 const BASE_URL = '<?= BASE_URL ?>';
 
 // Initialize Admin Paginator with default sort
-initAdminPaginator(BASE_URL, { sort: 'newest' });
+initAdminPaginator(BASE_URL, { sort: 'id-desc' });
 </script>
 
 <?php

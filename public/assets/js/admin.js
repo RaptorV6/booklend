@@ -46,50 +46,43 @@ function initAdminPaginator(baseUrl, filters = {}) {
 }
 
 // ════════════════════════════════════════════════════════
-// ADMIN SORT FILTER
+// TABLE HEADER SORTING
 // ════════════════════════════════════════════════════════
 
-function initAdminSort() {
-    const sortChip = document.getElementById('admin-sort-chip');
-    const sortDropdown = document.getElementById('admin-sort-dropdown');
-    const sortApply = document.getElementById('admin-sort-apply');
-    const sortLabel = document.getElementById('admin-sort-label');
+function initTableSort() {
+    const headers = document.querySelectorAll('.admin-table th.sortable');
 
-    if (!sortChip || !sortDropdown) return;
+    headers.forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.dataset.sort;
+            const isActive = header.classList.contains('active');
+            const currentDirection = header.classList.contains('desc') ? 'desc' : 'asc';
 
-    // Toggle dropdown
-    sortChip.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sortDropdown.classList.toggle('active');
-        sortChip.classList.toggle('active');
-    });
+            // Toggle direction if same column, otherwise default to asc
+            const newDirection = isActive ? (currentDirection === 'asc' ? 'desc' : 'asc') : 'asc';
 
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.filter-chip-wrapper')) {
-            sortDropdown?.classList.remove('active');
-            sortChip?.classList.remove('active');
-        }
-    });
+            // Remove active state from all headers
+            headers.forEach(h => {
+                h.classList.remove('active', 'asc', 'desc');
+            });
 
-    // Apply sort
-    sortApply.addEventListener('click', () => {
-        const selected = document.querySelector('input[name="admin-sort"]:checked');
-        if (!selected) return;
+            // Add active state to clicked header
+            header.classList.add('active', newDirection);
 
-        const sortValue = selected.value;
-        const sortText = selected.nextElementSibling.textContent;
+            // Update sort indicator arrow
+            const indicator = header.querySelector('.sort-indicator svg path');
+            if (indicator) {
+                if (newDirection === 'asc') {
+                    indicator.setAttribute('d', 'M6 3L2 7h8z'); // Arrow up
+                } else {
+                    indicator.setAttribute('d', 'M6 9L2 5h8z'); // Arrow down
+                }
+            }
 
-        // Update label
-        sortLabel.textContent = sortText;
-
-        // Update paginator filters and reload
-        window.adminPaginator.setFilters({ sort: sortValue });
-        window.adminPaginator.loadPage(1);
-
-        // Close dropdown
-        sortDropdown.classList.remove('active');
-        sortChip.classList.remove('active');
+            // Update paginator and reload
+            window.adminPaginator.setFilters({ sort: `${column}-${newDirection}` });
+            window.adminPaginator.loadPage(1);
+        });
     });
 }
 
@@ -435,7 +428,7 @@ async function deleteBook(bookId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     initBookSearch();
-    initAdminSort();
+    initTableSort();
 });
 
 // Close modals on ESC

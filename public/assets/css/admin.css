@@ -59,6 +59,43 @@
     white-space: nowrap;
 }
 
+/* Sortable Table Headers */
+.admin-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 30px;
+    transition: all 0.2s;
+}
+
+.admin-table th.sortable:hover {
+    background: rgba(102, 126, 234, 0.08);
+    color: var(--primary);
+}
+
+.admin-table th.sortable.active {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.admin-table th.sortable .sort-indicator {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.3;
+    transition: opacity 0.2s;
+}
+
+.admin-table th.sortable:hover .sort-indicator,
+.admin-table th.sortable.active .sort-indicator {
+    opacity: 1;
+}
+
+.admin-table th.sortable.active .sort-indicator {
+    color: var(--primary);
+}
+
 .admin-table tbody tr {
     border-bottom: 1px solid var(--border);
     transition: background 0.2s;
