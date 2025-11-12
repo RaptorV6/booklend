@@ -349,9 +349,16 @@ main {
     padding: 2rem;
 }
 
+.detail-cover {
+    max-height: 450px;
+    overflow: hidden;
+}
+
 .detail-cover img {
     width: 100%;
-    border-radius: 8px;
+    max-height: 450px;
+    object-fit: contain;
+    border-radius: 12px;
 }
 
 .book-cover-large {
@@ -361,7 +368,7 @@ main {
     align-items: center;
     justify-content: center;
     font-size: 6rem;
-    border-radius: 8px;
+    border-radius: 12px;
 }
 
 .detail-info h1 {

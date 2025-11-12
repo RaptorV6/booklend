@@ -11,14 +11,14 @@ let searchTimeout = null;
  * NOTE: BASE_URL must be defined before including this script
  * NOTE: adminPaginator is global and used by inline onclick handlers
  */
-function initAdminPaginator(baseUrl) {
+function initAdminPaginator(baseUrl, filters = {}) {
     window.adminPaginator = new Paginator({
         apiEndpoint: `${baseUrl}/api/admin/books`,
         containerSelector: '#books-tbody',
         controlsSelector: '#pagination-controls',
         paginationSelector: '#pagination',
         defaultPerPage: 20,
-        filters: {},
+        filters: filters,
         renderItem: (book) => {
             const genre = book.genre
                 ? `<span class="badge badge-genre">${escapeHtml(book.genre)}</span>`
@@ -42,6 +42,54 @@ function initAdminPaginator(baseUrl) {
                 </tr>
             `;
         }
+    });
+}
+
+// ════════════════════════════════════════════════════════
+// ADMIN SORT FILTER
+// ════════════════════════════════════════════════════════
+
+function initAdminSort() {
+    const sortChip = document.getElementById('admin-sort-chip');
+    const sortDropdown = document.getElementById('admin-sort-dropdown');
+    const sortApply = document.getElementById('admin-sort-apply');
+    const sortLabel = document.getElementById('admin-sort-label');
+
+    if (!sortChip || !sortDropdown) return;
+
+    // Toggle dropdown
+    sortChip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sortDropdown.classList.toggle('active');
+        sortChip.classList.toggle('active');
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.filter-chip-wrapper')) {
+            sortDropdown?.classList.remove('active');
+            sortChip?.classList.remove('active');
+        }
+    });
+
+    // Apply sort
+    sortApply.addEventListener('click', () => {
+        const selected = document.querySelector('input[name="admin-sort"]:checked');
+        if (!selected) return;
+
+        const sortValue = selected.value;
+        const sortText = selected.nextElementSibling.textContent;
+
+        // Update label
+        sortLabel.textContent = sortText;
+
+        // Update paginator filters and reload
+        window.adminPaginator.setFilters({ sort: sortValue });
+        window.adminPaginator.loadPage(1);
+
+        // Close dropdown
+        sortDropdown.classList.remove('active');
+        sortChip.classList.remove('active');
     });
 }
 
@@ -387,6 +435,7 @@ async function deleteBook(bookId) {
 
 document.addEventListener('DOMContentLoaded', () => {
     initBookSearch();
+    initAdminSort();
 });
 
 // Close modals on ESC

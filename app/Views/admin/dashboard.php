@@ -15,8 +15,56 @@ ob_start();
         <button class="btn-primary" onclick="openAddModal()">+ Přidat knihu</button>
     </div>
 
-    <!-- Pagination Controls (Top) -->
-    <div id="pagination-controls"></div>
+    <!-- Admin Controls -->
+    <div class="admin-controls">
+        <!-- Sort Filter -->
+        <div class="filter-chip-wrapper">
+            <button class="filter-chip" id="admin-sort-chip">
+                <span id="admin-sort-label">Nejnovější</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+
+            <div class="chip-dropdown" id="admin-sort-dropdown">
+                <div class="chip-dropdown-header">
+                    <h3>Řadit podle</h3>
+                </div>
+                <div class="chip-dropdown-content">
+                    <label class="chip-option">
+                        <input type="radio" name="admin-sort" value="newest" checked>
+                        <span>Nejnovější</span>
+                    </label>
+                    <label class="chip-option">
+                        <input type="radio" name="admin-sort" value="oldest">
+                        <span>Nejstarší</span>
+                    </label>
+                    <label class="chip-option">
+                        <input type="radio" name="admin-sort" value="title-asc">
+                        <span>Název (A-Z)</span>
+                    </label>
+                    <label class="chip-option">
+                        <input type="radio" name="admin-sort" value="title-desc">
+                        <span>Název (Z-A)</span>
+                    </label>
+                    <label class="chip-option">
+                        <input type="radio" name="admin-sort" value="author-asc">
+                        <span>Autor (A-Z)</span>
+                    </label>
+                    <label class="chip-option">
+                        <input type="radio" name="admin-sort" value="author-desc">
+                        <span>Autor (Z-A)</span>
+                    </label>
+                </div>
+                <div class="chip-dropdown-footer">
+                    <button class="chip-apply" id="admin-sort-apply">Použít</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination Controls (inline) -->
+        <div id="pagination-controls"></div>
+    </div>
 
     <!-- Responzivní tabulka wrapper -->
     <div class="admin-table-wrapper">
@@ -179,8 +227,8 @@ ob_start();
 // Global BASE_URL for admin.js
 const BASE_URL = '<?= BASE_URL ?>';
 
-// Initialize Admin Paginator
-initAdminPaginator(BASE_URL);
+// Initialize Admin Paginator with default sort
+initAdminPaginator(BASE_URL, { sort: 'newest' });
 </script>
 
 <?php
