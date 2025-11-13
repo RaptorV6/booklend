@@ -90,8 +90,7 @@
                         </div>
                     </div>
                 <?php else: ?>
-                    <a href="<?= BASE_URL ?>/login">Přihlásit</a>
-                    <a href="<?= BASE_URL ?>/register">Registrovat</a>
+                    <button class="btn-login" id="open-auth-modal">Přihlásit</button>
                 <?php endif; ?>
             </div>
         </div>
@@ -109,11 +108,85 @@
         </div>
     </footer>
 
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-content auth-modal-content">
+            <div class="modal-header">
+                <h2 id="auth-modal-title">Přihlášení</h2>
+                <button class="modal-close" id="close-auth-modal" aria-label="Zavřít">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form-modal" style="display: block;">
+                    <div class="form-group">
+                        <label for="modal-login">Email nebo uživatelské jméno</label>
+                        <input type="text" id="modal-login" name="login" required>
+                        <span class="error" id="login-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-login-password">Heslo</label>
+                        <input type="password" id="modal-login-password" name="password" required>
+                        <span class="error" id="login-password-error"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Přihlásit se</button>
+
+                    <p class="auth-toggle">
+                        Nemáte účet? <a href="#" id="show-register">Zaregistrujte se</a>
+                    </p>
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="auth-form-modal" style="display: none;">
+                    <div class="form-group">
+                        <label for="modal-username">Uživatelské jméno</label>
+                        <input type="text" id="modal-username" name="username" required>
+                        <span class="error" id="register-username-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-email">Email</label>
+                        <input type="email" id="modal-email" name="email" required>
+                        <span class="error" id="register-email-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-register-password">Heslo (min. 6 znaků)</label>
+                        <input type="password" id="modal-register-password" name="password" required>
+                        <span class="error" id="register-password-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-password-confirm">Potvrdit heslo</label>
+                        <input type="password" id="modal-password-confirm" name="password_confirm" required>
+                        <span class="error" id="register-password-confirm-error"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Zaregistrovat se</button>
+
+                    <p class="auth-toggle">
+                        Už máte účet? <a href="#" id="show-login">Přihlaste se</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- JS -->
+    <script>
+        // Set BASE_URL for JavaScript
+        window.BASE_URL = '<?= BASE_URL ?>';
+    </script>
     <script src="<?= BASE_URL ?>/assets/js/toast.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/app.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/ajax.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/isbn-formatter.js"></script>
+    <script src="<?= BASE_URL ?>/assets/js/auth-modal.js"></script>
 
     <script>
         // Hamburger Menu Toggle

@@ -286,20 +286,10 @@ class Book {
     }
 
     public function delete(int $id): bool {
-        error_log("Book::delete() called for ID: $id");
-
-        $result = $this->db->execute(
+        return $this->db->execute(
             "UPDATE books SET deleted_at = NOW() WHERE id = ?",
             [$id]
         );
-
-        if ($result) {
-            error_log("Book::delete() SUCCESS - Book ID $id marked as deleted (soft delete)");
-        } else {
-            error_log("Book::delete() FAILED - Could not delete book ID $id");
-        }
-
-        return $result;
     }
 
     public function updateStock(int $id, int $totalCopies, int $availableCopies): bool {
@@ -337,10 +327,8 @@ class Book {
     }
 
     public function restore(int $id, array $data): bool {
-        error_log("Book::restore() - Restoring book ID: $id");
-
         // Update the soft-deleted book with new data and clear deleted_at
-        $result = $this->db->execute(
+        return $this->db->execute(
             "UPDATE books
              SET title = ?, author = ?, slug = ?, genre = ?, language = ?,
                  description = ?, published_year = ?, total_copies = ?, available_copies = ?,
@@ -360,14 +348,6 @@ class Book {
                 $id
             ]
         );
-
-        if ($result) {
-            error_log("Book::restore() - SUCCESS: Book ID $id restored");
-        } else {
-            error_log("Book::restore() - FAILED: Could not restore book ID $id");
-        }
-
-        return $result;
     }
 
     private function generateSlug(string $title): string {
@@ -390,18 +370,14 @@ class Book {
         }
 
         // Use Google Books API only (has everything: high-res images + Czech descriptions)
-        error_log("Fetching metadata for ISBN: {$isbn}");
-
         $googleData = $this->callGoogleBooksAPI($isbn);
 
         if ($googleData && !empty($googleData['thumbnail'])) {
             // Cache and return
             $this->cache->set($cacheKey, $googleData, CACHE_TTL);
-            error_log("  ✓ Google Books: Found metadata with thumbnail");
             return $googleData;
         }
 
-        error_log("  ✗ No metadata found");
         return null;
     }
 
@@ -411,19 +387,14 @@ class Book {
         $response = $this->httpGet($url);
 
         if (!$response) {
-            error_log("Google Books API failed for ISBN: {$isbn}");
             return null;
         }
 
         $data = json_decode($response, true);
 
         if (!isset($data['items']) || empty($data['items'])) {
-            error_log("Google Books API: No items found for ISBN: {$isbn}");
             return null;
         }
-
-        // DEBUG: Log what we got
-        error_log("Google Books API: Found " . count($data['items']) . " items for ISBN: {$isbn}");
 
         // Find first item with thumbnail, or fall back to first item
         $book = null;
@@ -433,15 +404,10 @@ class Book {
             if (isset($item['volumeInfo'])) {
                 $hasThumbnail = isset($item['volumeInfo']['imageLinks']['thumbnail']);
 
-                // DEBUG: Log each item
-                error_log("  Item #{$index}: " . ($item['volumeInfo']['title'] ?? 'No title') .
-                         " | Thumbnail: " . ($hasThumbnail ? 'YES' : 'NO'));
-
                 // Prefer items with thumbnail
                 if ($hasThumbnail && !$foundWithThumbnail) {
                     $book = $item['volumeInfo'];
                     $foundWithThumbnail = true;
-                    error_log("  → SELECTED (has thumbnail)");
                     break;
                 }
 
@@ -453,7 +419,6 @@ class Book {
         }
 
         if (!$book) {
-            error_log("Google Books API: No valid volumeInfo found");
             return null;
         }
 
@@ -484,7 +449,7 @@ class Book {
             }
         }
 
-        $result = [
+        return [
             'title' => $book['title'] ?? null,
             'authors' => isset($book['authors']) ? implode(', ', $book['authors']) : null,
             'description' => $book['description'] ?? null,
@@ -493,11 +458,6 @@ class Book {
             'page_count' => $book['pageCount'] ?? null,
             'source' => 'Google Books (zoom=0 - max quality)',
         ];
-
-        // DEBUG: Log final result
-        error_log("Final metadata: " . json_encode($result));
-
-        return $result;
     }
 
     // ════════════════════════════════════════════════════════

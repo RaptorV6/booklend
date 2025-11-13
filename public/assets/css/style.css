@@ -791,3 +791,227 @@ main {
         font-size: 0.85rem;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH MODAL STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Login button in navbar */
+.btn-login {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Modal overlay */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal content */
+.auth-modal-content {
+    background: var(--surface);
+    border-radius: 16px;
+    max-width: 450px;
+    width: 95%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 30px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    background: var(--background);
+    color: var(--text);
+}
+
+/* Modal body */
+.modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Auth form styling */
+.auth-form-modal {
+    display: none;
+    animation: formFadeIn 0.3s ease;
+}
+
+.auth-form-modal[style*="display: block"] {
+    display: block !important;
+}
+
+@keyframes formFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.auth-form-modal .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.auth-form-modal label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.auth-form-modal input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--text);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.auth-form-modal input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.auth-form-modal .error {
+    display: block;
+    color: var(--danger);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.auth-form-modal .error:empty {
+    display: none;
+}
+
+/* Auth toggle link */
+.auth-toggle {
+    text-align: center;
+    margin-top: 1.5rem;
+    margin-bottom: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.auth-toggle a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.auth-toggle a:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+    .auth-modal-content {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 0;
+        max-height: 100vh;
+    }
+
+    .modal-header {
+        padding: 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .btn-login {
+        padding: 0.5rem 1.2rem;
+        font-size: 0.9rem;
+    }
+}

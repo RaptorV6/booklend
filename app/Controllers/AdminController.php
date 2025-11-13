@@ -62,8 +62,6 @@ class AdminController {
         try {
             if ($deletedBook) {
                 // Restore the soft-deleted book instead of creating a new one
-                error_log("AdminController::apiCreate() - Found soft-deleted book (ID: {$deletedBook['id']}), restoring instead of creating new");
-
                 $result = $this->bookModel->restore($deletedBook['id'], $data);
 
                 if ($result) {
@@ -73,7 +71,6 @@ class AdminController {
                         'id' => $deletedBook['id']
                     ]);
                 } else {
-                    error_log("AdminController::apiCreate() - Restore failed, falling back to create");
                     $id = $this->bookModel->create($data);
                     jsonResponse(['success' => true, 'message' => 'Kniha úspěšně přidána', 'id' => $id]);
                 }
@@ -85,14 +82,11 @@ class AdminController {
         } catch (\PDOException $e) {
             // Handle specific DB constraint violations
             if (str_contains($e->getMessage(), 'uq_slug')) {
-                error_log("Admin create error: Duplicate slug - " . $e->getMessage());
                 jsonResponse(['error' => 'Kniha s podobným názvem již existuje (duplicitní slug)'], 409);
             } else {
-                error_log("Admin create error: " . $e->getMessage());
                 jsonResponse(['error' => 'Chyba databáze: ' . $e->getMessage()], 500);
             }
         } catch (\Exception $e) {
-            error_log("Admin create error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při vytváření: ' . $e->getMessage()], 500);
         }
     }
@@ -117,7 +111,6 @@ class AdminController {
             $this->bookModel->update($bookId, $data);
             jsonResponse(['success' => true, 'message' => 'Kniha aktualizována']);
         } catch (\Exception $e) {
-            error_log("Admin update error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při aktualizaci: ' . $e->getMessage()], 500);
         }
     }
@@ -135,20 +128,10 @@ class AdminController {
             jsonResponse(['error' => 'Book ID required'], 400);
         }
 
-        error_log("AdminController::apiDelete() - Attempting to delete book ID: $bookId");
-
         try {
-            $result = $this->bookModel->delete($bookId);
-
-            if ($result) {
-                error_log("AdminController::apiDelete() - SUCCESS: Book ID $bookId deleted");
-            } else {
-                error_log("AdminController::apiDelete() - WARNING: delete() returned false for book ID $bookId");
-            }
-
+            $this->bookModel->delete($bookId);
             jsonResponse(['success' => true, 'message' => 'Kniha smazána']);
         } catch (\Exception $e) {
-            error_log("Admin delete error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při mazání: ' . $e->getMessage()], 500);
         }
     }
@@ -224,8 +207,6 @@ class AdminController {
 
         $query = $_GET['q'] ?? '';
 
-        error_log("Admin search books: query = '$query'");
-
         if (strlen($query) < 2) {
             jsonResponse(['items' => []]);
             return;
@@ -237,8 +218,6 @@ class AdminController {
 
         // Format query for Google Books API
         $searchQuery = $isISBN ? "isbn:{$cleanQuery}" : $query;
-
-        error_log("Admin search: isISBN = " . ($isISBN ? 'yes' : 'no') . ", searchQuery = '$searchQuery'");
 
         // Search in Google Books API - prefer Czech market but don't restrict language
         // (many Czech translations are not marked as 'cs' in Google Books)
@@ -262,15 +241,11 @@ class AdminController {
         curl_close($ch);
 
         if (!$response || $httpCode !== 200) {
-            error_log("Google Books API failed: HTTP $httpCode, Error: $error");
-            error_log("Response body: " . substr($response, 0, 1000));
-
             // Try to decode error message from Google
             $errorData = json_decode($response, true);
             $errorMsg = "API Error: HTTP $httpCode";
             if (isset($errorData['error']['message'])) {
                 $errorMsg .= " - " . $errorData['error']['message'];
-                error_log("Google API Error: " . $errorData['error']['message']);
             }
 
             jsonResponse(['items' => [], 'debug' => $errorMsg]);
@@ -386,7 +361,6 @@ class AdminController {
             $result = $this->bookModel->updateStock($bookId, $totalCopies, $availableCopies);
             jsonResponse(['success' => true, 'message' => 'Skladové stavy aktualizovány']);
         } catch (\Exception $e) {
-            error_log("Admin update stock error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při aktualizaci: ' . $e->getMessage()], 500);
         }
     }

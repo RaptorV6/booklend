@@ -3,9 +3,9 @@
 // BOOKLEND - Front Controller
 // ═══════════════════════════════════════════════════════════
 
-// Error reporting (development)
+// Error reporting (production)
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 
 // Autoloader (PSR-4 style)
 spl_autoload_register(function ($class) {
