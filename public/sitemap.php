@@ -13,8 +13,8 @@ use app\Models\Book;
 header('Content-Type: application/xml; charset=utf-8');
 
 // Initialize database and models
-$db = new Database();
-$cache = new Cache();
+$db = new Database(DB_HOST, DB_NAME, DB_USER, DB_PASS);
+$cache = new Cache(CACHE_DIR, CACHE_MAX_SIZE_MB, CACHE_MAX_FILES);
 $bookModel = new Book($db, $cache);
 
 // Get all books (without limit for sitemap)

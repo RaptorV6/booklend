@@ -11,8 +11,8 @@ Options -Indexes
 # Sitemap.xml redirect to dynamic sitemap.php
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
-# Allow direct access to robots.txt
-RewriteRule ^robots\.txt$ - [L]
+# Robots.txt redirect to dynamic robots.php
+RewriteRule ^robots\.txt$ robots.php [L]
 
 # Redirect all requests to index.php (except existing files)
 RewriteCond %{REQUEST_FILENAME} !-f
