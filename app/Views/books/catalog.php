@@ -8,11 +8,16 @@ $canonicalUrl = BASE_URL . '/';
 
 $hasGenre = !empty($currentFilters['genre']);
 $hasYear = !empty($currentFilters['year']);
+$hasLanguage = !empty($currentFilters['language']);
 $multipleGenres = $hasGenre && count($currentFilters['genre']) > 1;
 $multipleYears = $hasYear && count($currentFilters['year']) > 1;
+$multipleLanguages = $hasLanguage && count($currentFilters['language']) > 1;
 
-if ($hasGenre && $hasYear) {
-    // Combination of genre + year filters → canonical to homepage
+// Count how many filter types are active
+$activeFilterTypes = ($hasGenre ? 1 : 0) + ($hasYear ? 1 : 0) + ($hasLanguage ? 1 : 0);
+
+if ($activeFilterTypes > 1) {
+    // Combination of multiple filter types → canonical to homepage
     $canonicalUrl = BASE_URL . '/';
 } elseif ($multipleGenres) {
     // Multiple genres → canonical to first genre only
@@ -20,12 +25,18 @@ if ($hasGenre && $hasYear) {
 } elseif ($multipleYears) {
     // Multiple years → canonical to first year only
     $canonicalUrl = BASE_URL . '/?rok=' . $currentFilters['year'][0];
+} elseif ($multipleLanguages) {
+    // Multiple languages → canonical to first language only
+    $canonicalUrl = BASE_URL . '/?jazyk=' . $currentFilters['language'][0];
 } elseif ($hasGenre && count($currentFilters['genre']) === 1) {
     // Single genre filter → canonical to self (indexable)
     $canonicalUrl = BASE_URL . '/?zanr=' . urlencode($currentFilters['genre'][0]);
 } elseif ($hasYear && count($currentFilters['year']) === 1) {
     // Single year filter → canonical to self (indexable)
     $canonicalUrl = BASE_URL . '/?rok=' . $currentFilters['year'][0];
+} elseif ($hasLanguage && count($currentFilters['language']) === 1) {
+    // Single language filter → canonical to self (indexable)
+    $canonicalUrl = BASE_URL . '/?jazyk=' . $currentFilters['language'][0];
 }
 // else: no filters → homepage canonical (already set)
 
@@ -155,6 +166,41 @@ ob_start();
                     </div>
                     <div class="chip-dropdown-footer">
                         <button class="chip-apply" data-filter="year">Použít</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language Filter Chip -->
+            <div class="filter-chip-wrapper">
+                <button class="filter-chip" id="language-chip">
+                    <span>Jazyk</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="chip-badge" id="language-badge" style="display: none;">0</span>
+                </button>
+
+                <!-- Language Dropdown -->
+                <div class="chip-dropdown" id="language-dropdown">
+                    <div class="chip-dropdown-header">
+                        <h3>Vyberte jazyky</h3>
+                        <button class="chip-clear" data-filter="language">Vymazat</button>
+                    </div>
+                    <div class="chip-dropdown-content">
+                        <?php if (!empty($languages)): ?>
+                            <?php foreach ($languages as $l): ?>
+                                <label class="chip-option">
+                                    <input type="checkbox" name="languages[]" value="<?= e($l['language']) ?>" <?= (isset($currentFilters['language']) && in_array($l['language'], $currentFilters['language'])) ? 'checked' : '' ?>>
+                                    <span><?= strtoupper(e($l['language'])) ?></span>
+                                    <span class="option-count"><?= $l['count'] ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p style="padding: 12px; color: var(--text-muted); text-align: center;">Žádné jazyky k dispozici</p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="chip-dropdown-footer">
+                        <button class="chip-apply" data-filter="language">Použít</button>
                     </div>
                 </div>
             </div>
@@ -308,6 +354,13 @@ const FilterController = {
         const yearApplyBtn = yearDropdown?.querySelector('.chip-apply');
         const yearClearBtn = yearDropdown?.querySelector('.chip-clear');
 
+        // Language Chip
+        const languageChip = document.getElementById('language-chip');
+        const languageDropdown = document.getElementById('language-dropdown');
+        const languageBadge = document.getElementById('language-badge');
+        const languageApplyBtn = languageDropdown?.querySelector('.chip-apply');
+        const languageClearBtn = languageDropdown?.querySelector('.chip-clear');
+
         // Sort Chip
         const sortChip = document.getElementById('sort-chip');
         const sortDropdown = document.getElementById('sort-dropdown');
@@ -318,6 +371,8 @@ const FilterController = {
             e.stopPropagation();
             yearDropdown?.classList.remove('active');
             yearChip?.classList.remove('active');
+            languageDropdown?.classList.remove('active');
+            languageChip?.classList.remove('active');
             sortDropdown?.classList.remove('active');
             sortChip?.classList.remove('active');
             genreDropdown.classList.toggle('active');
@@ -329,10 +384,25 @@ const FilterController = {
             e.stopPropagation();
             genreDropdown?.classList.remove('active');
             genreChip?.classList.remove('active');
+            languageDropdown?.classList.remove('active');
+            languageChip?.classList.remove('active');
             sortDropdown?.classList.remove('active');
             sortChip?.classList.remove('active');
             yearDropdown.classList.toggle('active');
             yearChip.classList.toggle('active');
+        });
+
+        // Toggle language dropdown
+        languageChip?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            genreDropdown?.classList.remove('active');
+            genreChip?.classList.remove('active');
+            yearDropdown?.classList.remove('active');
+            yearChip?.classList.remove('active');
+            sortDropdown?.classList.remove('active');
+            sortChip?.classList.remove('active');
+            languageDropdown.classList.toggle('active');
+            languageChip.classList.toggle('active');
         });
 
         // Toggle sort dropdown
@@ -342,6 +412,8 @@ const FilterController = {
             genreChip?.classList.remove('active');
             yearDropdown?.classList.remove('active');
             yearChip?.classList.remove('active');
+            languageDropdown?.classList.remove('active');
+            languageChip?.classList.remove('active');
             sortDropdown.classList.toggle('active');
             sortChip.classList.toggle('active');
         });
@@ -391,6 +463,23 @@ const FilterController = {
         // Initialize year badge
         this.updateYearBadge();
 
+        // Apply language filters
+        languageApplyBtn?.addEventListener('click', () => this.applyFilters());
+
+        // Clear language filters
+        languageClearBtn?.addEventListener('click', () => {
+            languageDropdown.querySelectorAll('input[name="languages[]"]').forEach(cb => cb.checked = false);
+            this.updateLanguageBadge();
+        });
+
+        // Update language badge on checkbox change
+        languageDropdown?.querySelectorAll('input[name="languages[]"]').forEach(cb => {
+            cb.addEventListener('change', () => this.updateLanguageBadge());
+        });
+
+        // Initialize language badge
+        this.updateLanguageBadge();
+
         // Apply sort
         sortApplyBtn?.addEventListener('click', () => this.applyFilters());
     },
@@ -413,6 +502,14 @@ const FilterController = {
         ).map(cb => cb.value);
         if (selectedYears.length > 0) {
             url.searchParams.set('rok', selectedYears.join('-'));
+        }
+
+        // Language filter - hyphen-separated
+        const selectedLanguages = Array.from(
+            document.querySelectorAll('input[name="languages[]"]:checked')
+        ).map(cb => cb.value);
+        if (selectedLanguages.length > 0) {
+            url.searchParams.set('jazyk', selectedLanguages.join('-'));
         }
 
         // Sort filter
@@ -448,6 +545,19 @@ const FilterController = {
         } else {
             yearBadge.style.display = 'none';
         }
+    },
+
+    updateLanguageBadge() {
+        const languageDropdown = document.getElementById('language-dropdown');
+        const languageBadge = document.getElementById('language-badge');
+        const selectedCount = languageDropdown?.querySelectorAll('input[name="languages[]"]:checked').length || 0;
+
+        if (selectedCount > 0) {
+            languageBadge.textContent = selectedCount;
+            languageBadge.style.display = 'inline-block';
+        } else {
+            languageBadge.style.display = 'none';
+        }
     }
 };
 
@@ -460,6 +570,9 @@ if (zanrValue) filters.zanr = zanrValue;
 
 const rokValue = currentUrl.searchParams.get('rok');
 if (rokValue) filters.rok = rokValue;
+
+const jazykValue = currentUrl.searchParams.get('jazyk');
+if (jazykValue) filters.jazyk = jazykValue;
 
 const sortValue = currentUrl.searchParams.get('sort');
 if (sortValue) filters.sort = sortValue;

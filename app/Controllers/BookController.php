@@ -66,6 +66,22 @@ class BookController {
             }
         }
 
+        if (!empty($_GET['jazyk'])) {
+            // Handle both array format (?jazyk[]=...) and hyphen-separated (?jazyk=cs-en)
+            $languages = is_array($_GET['jazyk'])
+                ? $_GET['jazyk']
+                : array_map('trim', explode('-', $_GET['jazyk']));
+
+            // SECURITY: Filter out invalid language codes (2-10 chars, alphanumeric)
+            $languages = array_filter($languages, function($l) {
+                return !empty($l) && strlen($l) >= 2 && strlen($l) <= 10 && ctype_alpha($l);
+            });
+
+            if (!empty($languages)) {
+                $filters['language'] = array_values($languages); // re-index array
+            }
+        }
+
         if (!empty($_GET['sort'])) {
             // SECURITY: Whitelist allowed sort values
             $allowedSorts = ['newest', 'oldest', 'title-asc', 'title-desc', 'author-asc', 'author-desc', 'year-asc', 'year-desc'];
@@ -77,6 +93,7 @@ class BookController {
         // Get filter options
         $genres = $this->bookModel->getGenres();
         $years = $this->bookModel->getPublishedYears();
+        $languages = $this->bookModel->getLanguages();
 
         // Get books for current page
         $books = $this->bookModel->paginate($page, $perPage, $filters);
@@ -201,6 +218,22 @@ class BookController {
 
             if (!empty($years)) {
                 $filters['year'] = array_values($years); // re-index array
+            }
+        }
+
+        if (!empty($_GET['jazyk'])) {
+            // Handle both array format (?jazyk[]=...) and hyphen-separated (?jazyk=cs-en)
+            $languages = is_array($_GET['jazyk'])
+                ? $_GET['jazyk']
+                : array_map('trim', explode('-', $_GET['jazyk']));
+
+            // SECURITY: Filter out invalid language codes (2-10 chars, alphanumeric)
+            $languages = array_filter($languages, function($l) {
+                return !empty($l) && strlen($l) >= 2 && strlen($l) <= 10 && ctype_alpha($l);
+            });
+
+            if (!empty($languages)) {
+                $filters['language'] = array_values($languages); // re-index array
             }
         }
 

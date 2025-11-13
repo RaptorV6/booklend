@@ -113,6 +113,7 @@
     <script src="<?= BASE_URL ?>/assets/js/toast.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/app.js"></script>
     <script src="<?= BASE_URL ?>/assets/js/ajax.js"></script>
+    <script src="<?= BASE_URL ?>/assets/js/isbn-formatter.js"></script>
 
     <script>
         // Hamburger Menu Toggle

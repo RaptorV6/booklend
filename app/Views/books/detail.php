@@ -83,7 +83,11 @@ ob_start();
             <?php endif; ?>
 
             <div class="metadata">
-                <p><strong>ISBN:</strong> <?= e($book['isbn']) ?></p>
+                <p><strong>ISBN:</strong> <span class="isbn-formatted"><?= e($book['isbn']) ?></span></p>
+
+                <?php if (!empty($book['genre'])): ?>
+                    <p><strong>Žánr:</strong> <?= e($book['genre']) ?></p>
+                <?php endif; ?>
 
                 <?php if (!empty($book['published_date'])): ?>
                     <p><strong>Rok vydání:</strong> <?= e($book['published_date']) ?></p>

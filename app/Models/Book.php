@@ -88,6 +88,20 @@ class Book {
             }
         }
 
+        // Language filter - support multiple values
+        if (!empty($filters['language'])) {
+            if (is_array($filters['language'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['language']), '?'));
+                $where[] = "language IN ($placeholders)";
+                foreach ($filters['language'] as $lang) {
+                    $params[] = $lang;
+                }
+            } else {
+                $where[] = "language = ?";
+                $params[] = $filters['language'];
+            }
+        }
+
         // Build ORDER BY clause
         $orderBy = "id DESC"; // default - newest first
         if (!empty($filters['sort'])) {
@@ -165,6 +179,20 @@ class Book {
             }
         }
 
+        // Language filter - support multiple values
+        if (!empty($filters['language'])) {
+            if (is_array($filters['language'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['language']), '?'));
+                $where[] = "language IN ($placeholders)";
+                foreach ($filters['language'] as $lang) {
+                    $params[] = $lang;
+                }
+            } else {
+                $where[] = "language = ?";
+                $params[] = $filters['language'];
+            }
+        }
+
         $whereClause = implode(" AND ", $where);
 
         $result = $this->db->fetch(
@@ -195,6 +223,16 @@ class Book {
         );
     }
 
+    public function getLanguages(): array {
+        return $this->db->fetchAll(
+            "SELECT language, COUNT(*) as count
+             FROM books
+             WHERE deleted_at IS NULL AND language IS NOT NULL
+             GROUP BY language
+             ORDER BY count DESC"
+        );
+    }
+
     public function incrementViews(int $id): void {
         $this->db->query(
             "UPDATE books SET views_count = views_count + 1 WHERE id = ?",
@@ -206,14 +244,16 @@ class Book {
         $slug = $this->generateSlug($data['title']);
 
         return $this->db->insert(
-            "INSERT INTO books (title, author, isbn, slug, genre, published_year, total_copies, available_copies, thumbnail)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO books (title, author, isbn, slug, genre, language, description, published_year, total_copies, available_copies, thumbnail)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['title'],
                 $data['author'],
                 $data['isbn'],
                 $slug,
                 $data['genre'] ?? null,
+                $data['language'] ?? 'cs',
+                $data['description'] ?? null,
                 $data['published_year'] ?? null,
                 $data['total_copies'] ?? 1,
                 $data['available_copies'] ?? 1,
@@ -246,10 +286,20 @@ class Book {
     }
 
     public function delete(int $id): bool {
-        return $this->db->execute(
+        error_log("Book::delete() called for ID: $id");
+
+        $result = $this->db->execute(
             "UPDATE books SET deleted_at = NOW() WHERE id = ?",
             [$id]
         );
+
+        if ($result) {
+            error_log("Book::delete() SUCCESS - Book ID $id marked as deleted (soft delete)");
+        } else {
+            error_log("Book::delete() FAILED - Could not delete book ID $id");
+        }
+
+        return $result;
     }
 
     public function updateStock(int $id, int $totalCopies, int $availableCopies): bool {
@@ -277,6 +327,47 @@ class Book {
 
         $result = $this->db->fetch($query, $params);
         return ($result['count'] ?? 0) > 0;
+    }
+
+    public function findDeletedByIsbn(string $isbn): ?array {
+        return $this->db->fetch(
+            "SELECT * FROM books WHERE isbn = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC LIMIT 1",
+            [$isbn]
+        );
+    }
+
+    public function restore(int $id, array $data): bool {
+        error_log("Book::restore() - Restoring book ID: $id");
+
+        // Update the soft-deleted book with new data and clear deleted_at
+        $result = $this->db->execute(
+            "UPDATE books
+             SET title = ?, author = ?, slug = ?, genre = ?, language = ?,
+                 description = ?, published_year = ?, total_copies = ?, available_copies = ?,
+                 thumbnail = ?, deleted_at = NULL, updated_at = NOW()
+             WHERE id = ?",
+            [
+                $data['title'],
+                $data['author'],
+                $this->generateSlug($data['title']),
+                $data['genre'] ?? null,
+                $data['language'] ?? 'cs',
+                $data['description'] ?? null,
+                $data['published_year'] ?? null,
+                $data['total_copies'] ?? 1,
+                $data['available_copies'] ?? 1,
+                $data['thumbnail'] ?? null,
+                $id
+            ]
+        );
+
+        if ($result) {
+            error_log("Book::restore() - SUCCESS: Book ID $id restored");
+        } else {
+            error_log("Book::restore() - FAILED: Could not restore book ID $id");
+        }
+
+        return $result;
     }
 
     private function generateSlug(string $title): string {
@@ -315,7 +406,8 @@ class Book {
     }
 
     private function callGoogleBooksAPI(string $isbn): ?array {
-        $url = GOOGLE_BOOKS_API . "?q=isbn:{$isbn}";
+        // Request books from Czech market (don't restrict language - many translations not marked as 'cs')
+        $url = GOOGLE_BOOKS_API . "?q=isbn:{$isbn}&country=CZ";
         $response = $this->httpGet($url);
 
         if (!$response) {
@@ -381,11 +473,11 @@ class Book {
                 $thumbnail = $book['imageLinks']['smallThumbnail'];
             }
 
-            // Optimize image size by changing zoom parameter
+            // Use high-quality images for better user experience
             if ($thumbnail) {
-                // Remove existing zoom parameter and add zoom=1 for medium quality (better performance)
+                // Remove existing zoom parameter and add zoom=0 for maximum quality
                 $thumbnail = preg_replace('/[&?]zoom=\d+/', '', $thumbnail);
-                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=1';
+                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=0';
 
                 // Convert HTTP to HTTPS to avoid mixed content warnings in browsers
                 $thumbnail = str_replace('http://', 'https://', $thumbnail);
@@ -399,7 +491,7 @@ class Book {
             'thumbnail' => $thumbnail,
             'published_date' => $book['publishedDate'] ?? null,
             'page_count' => $book['pageCount'] ?? null,
-            'source' => 'Google Books (zoom=1)',
+            'source' => 'Google Books (zoom=0 - max quality)',
         ];
 
         // DEBUG: Log final result
@@ -438,20 +530,13 @@ class Book {
             return null;
         }
 
-        // Fetch metadata from API/cache
-        $metadata = $this->fetchMetadata($book['isbn']);
+        // If description is missing in DB, fetch from API as fallback
+        if (empty($book['description'])) {
+            $metadata = $this->fetchMetadata($book['isbn']);
 
-        if ($metadata) {
-            // Merge metadata but DON'T overwrite title and author from DB
-            // (DB has correct Czech names, API might have different editions)
-            $originalTitle = $book['title'];
-            $originalAuthor = $book['author'];
-
-            $book = array_merge($book, $metadata);
-
-            // Restore original title and author from DB
-            $book['title'] = $originalTitle;
-            $book['author'] = $originalAuthor;
+            if ($metadata && !empty($metadata['description'])) {
+                $book['description'] = $metadata['description'];
+            }
         }
 
         return $book;

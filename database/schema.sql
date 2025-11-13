@@ -1,5 +1,6 @@
 -- ═══════════════════════════════════════════════════════════
 -- BOOKLEND - DATABASE SCHEMA
+-- Updated: 2025-11-13
 -- ═══════════════════════════════════════════════════════════
 
 SET NAMES utf8mb4;
@@ -13,7 +14,8 @@ DROP TABLE IF EXISTS users;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ───────────────────────────────────────────────────────────
--- USERS
+-- USERS TABLE
+-- Stores user accounts with authentication and role management
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -33,7 +35,8 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ───────────────────────────────────────────────────────────
--- BOOKS
+-- BOOKS TABLE
+-- Book catalog with inventory management and metadata
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE books (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -41,7 +44,10 @@ CREATE TABLE books (
     slug VARCHAR(255) NOT NULL,
     title VARCHAR(500) NOT NULL,
     author VARCHAR(255) NOT NULL,
+    genre VARCHAR(50) DEFAULT 'Ostatní',
+    language VARCHAR(10) DEFAULT 'cs',
     description TEXT NULL,
+    published_year INT(4) UNSIGNED NULL,
     thumbnail VARCHAR(500) NULL,
     total_copies INT UNSIGNED DEFAULT 1,
     available_copies INT UNSIGNED DEFAULT 1,
@@ -50,17 +56,22 @@ CREATE TABLE books (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
 
-    UNIQUE KEY uq_isbn (isbn),
-    UNIQUE KEY uq_slug (slug),
+    KEY idx_isbn (isbn),
+    KEY idx_slug (slug),
     KEY idx_search (title(100), author(100)),
     KEY idx_available (available_copies, deleted_at),
     KEY idx_added (added_at),
+    KEY idx_genre (genre, deleted_at),
+    KEY idx_year (published_year, deleted_at),
+    KEY idx_language (language),
+    KEY idx_genre_year (genre, published_year, deleted_at),
 
     CONSTRAINT chk_stock CHECK (available_copies <= total_copies)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ───────────────────────────────────────────────────────────
--- RENTALS
+-- RENTALS TABLE
+-- Tracks book lending transactions and history
 -- ───────────────────────────────────────────────────────────
 CREATE TABLE rentals (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -70,6 +81,7 @@ CREATE TABLE rentals (
     due_at DATETIME NOT NULL,
     returned_at DATETIME NULL,
 
+    -- Computed column: automatically calculates if rental is active
     is_active TINYINT(1) AS (
         CASE WHEN returned_at IS NULL THEN 1 ELSE 0 END
     ) STORED,
@@ -89,9 +101,11 @@ CREATE TABLE rentals (
 
 -- ───────────────────────────────────────────────────────────
 -- TRIGGERS
+-- Automatic inventory management
 -- ───────────────────────────────────────────────────────────
 DELIMITER $$
 
+-- Trigger: Decrease available_copies when book is rented
 CREATE TRIGGER trg_rental_insert
 AFTER INSERT ON rentals
 FOR EACH ROW
@@ -108,6 +122,7 @@ BEGIN
     END IF;
 END$$
 
+-- Trigger: Increase available_copies when book is returned
 CREATE TRIGGER trg_rental_update
 AFTER UPDATE ON rentals
 FOR EACH ROW
@@ -123,24 +138,9 @@ DELIMITER ;
 
 -- ───────────────────────────────────────────────────────────
 -- SEED DATA
+-- Admin user for initial setup
 -- ───────────────────────────────────────────────────────────
 
--- Admin (heslo: admin123)
+-- Admin user (username: admin, password: Start321)
 INSERT INTO users (username, email, password_hash, role) VALUES
-('admin', 'admin@booklend.cz', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
-
--- Test user (heslo: user123)
-INSERT INTO users (username, email, password_hash, role) VALUES
-('testuser', 'user@booklend.cz', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'user');
-
--- Sample books
-INSERT INTO books (isbn, slug, title, author, total_copies, available_copies) VALUES
-('9788025703673', 'alchymista-paulo-coelho', 'Alchymista', 'Paulo Coelho', 3, 3),
-('9780451524935', '1984-george-orwell', '1984', 'George Orwell', 2, 1),
-('9780156012188', 'maly-princ-antoine-de-saint-exupery', 'Malý princ', 'Antoine de Saint-Exupéry', 5, 5),
-('9780439708180', 'harry-potter-kamen-mudrcuu', 'Harry Potter a Kámen mudrců', 'J.K. Rowling', 4, 4),
-('9780547928227', 'hobit-jrr-tolkien', 'Hobit', 'J.R.R. Tolkien', 3, 3);
-
--- Sample rental
-INSERT INTO rentals (user_id, book_id, due_at) VALUES
-(2, 2, DATE_ADD(NOW(), INTERVAL 14 DAY));
+('admin', 'admin@booklend.cz', '$2y$10$zf2Dn6ejbY5UUvimTFZUguSoCA.VbWJUA0meCNlhiWfukbStGN/Gm', 'admin');

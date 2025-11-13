@@ -202,6 +202,7 @@ ob_start();
 <script src="<?= BASE_URL ?>/assets/js/ajax.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/pagination.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/helpers.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/isbn-formatter.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/admin.js"></script>
 <script>
 // Global BASE_URL for admin.js

@@ -51,14 +51,46 @@ class AdminController {
             jsonResponse(['error' => 'Název, autor a ISBN jsou povinné'], 400);
         }
 
-        // Check for duplicate ISBN
+        // Check for duplicate ISBN in active books
         if ($this->bookModel->existsByIsbn($data['isbn'])) {
-            jsonResponse(['error' => 'Kniha s tímto ISBN již existuje'], 409);
+            jsonResponse(['error' => 'Kniha s ISBN ' . $data['isbn'] . ' již existuje v databázi'], 409);
         }
 
+        // Check if there's a soft-deleted book with same ISBN
+        $deletedBook = $this->bookModel->findDeletedByIsbn($data['isbn']);
+
         try {
-            $id = $this->bookModel->create($data);
-            jsonResponse(['success' => true, 'message' => 'Kniha přidána', 'id' => $id]);
+            if ($deletedBook) {
+                // Restore the soft-deleted book instead of creating a new one
+                error_log("AdminController::apiCreate() - Found soft-deleted book (ID: {$deletedBook['id']}), restoring instead of creating new");
+
+                $result = $this->bookModel->restore($deletedBook['id'], $data);
+
+                if ($result) {
+                    jsonResponse([
+                        'success' => true,
+                        'message' => 'Kniha obnovena (byla dříve smazána)',
+                        'id' => $deletedBook['id']
+                    ]);
+                } else {
+                    error_log("AdminController::apiCreate() - Restore failed, falling back to create");
+                    $id = $this->bookModel->create($data);
+                    jsonResponse(['success' => true, 'message' => 'Kniha úspěšně přidána', 'id' => $id]);
+                }
+            } else {
+                // No soft-deleted book found, create new
+                $id = $this->bookModel->create($data);
+                jsonResponse(['success' => true, 'message' => 'Kniha úspěšně přidána', 'id' => $id]);
+            }
+        } catch (\PDOException $e) {
+            // Handle specific DB constraint violations
+            if (str_contains($e->getMessage(), 'uq_slug')) {
+                error_log("Admin create error: Duplicate slug - " . $e->getMessage());
+                jsonResponse(['error' => 'Kniha s podobným názvem již existuje (duplicitní slug)'], 409);
+            } else {
+                error_log("Admin create error: " . $e->getMessage());
+                jsonResponse(['error' => 'Chyba databáze: ' . $e->getMessage()], 500);
+            }
         } catch (\Exception $e) {
             error_log("Admin create error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při vytváření: ' . $e->getMessage()], 500);
@@ -103,8 +135,17 @@ class AdminController {
             jsonResponse(['error' => 'Book ID required'], 400);
         }
 
+        error_log("AdminController::apiDelete() - Attempting to delete book ID: $bookId");
+
         try {
             $result = $this->bookModel->delete($bookId);
+
+            if ($result) {
+                error_log("AdminController::apiDelete() - SUCCESS: Book ID $bookId deleted");
+            } else {
+                error_log("AdminController::apiDelete() - WARNING: delete() returned false for book ID $bookId");
+            }
+
             jsonResponse(['success' => true, 'message' => 'Kniha smazána']);
         } catch (\Exception $e) {
             error_log("Admin delete error: " . $e->getMessage());
@@ -190,8 +231,21 @@ class AdminController {
             return;
         }
 
-        // Search in Google Books API using cURL (more reliable than file_get_contents)
-        $url = GOOGLE_BOOKS_API . "?q=" . urlencode($query) . "&maxResults=20&key=" . GOOGLE_BOOKS_API_KEY;
+        // Detect if query is ISBN (10 or 13 digits, possibly with hyphens)
+        $cleanQuery = str_replace(['-', ' '], '', $query);
+        $isISBN = preg_match('/^\d{10}(\d{3})?$/', $cleanQuery);
+
+        // Format query for Google Books API
+        $searchQuery = $isISBN ? "isbn:{$cleanQuery}" : $query;
+
+        error_log("Admin search: isISBN = " . ($isISBN ? 'yes' : 'no') . ", searchQuery = '$searchQuery'");
+
+        // Search in Google Books API - prefer Czech market but don't restrict language
+        // (many Czech translations are not marked as 'cs' in Google Books)
+        $url = GOOGLE_BOOKS_API . "?q=" . urlencode($searchQuery)
+            . "&maxResults=20"
+            . "&country=CZ"           // Prefer Czech market
+            . "&key=" . GOOGLE_BOOKS_API_KEY;
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -260,19 +314,29 @@ class AdminController {
                 continue;
             }
 
-            // Get thumbnail (allow null if missing)
+            // Get thumbnail in HD quality (zoom=0) - stored in DB and used everywhere
             $thumbnail = null;
             if (!empty($volumeInfo['imageLinks']['thumbnail'])) {
                 $thumbnail = str_replace('http://', 'https://', $volumeInfo['imageLinks']['thumbnail']);
                 $thumbnail = preg_replace('/[&?]zoom=\d+/', '', $thumbnail);
-                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=1';
+                $thumbnail .= (strpos($thumbnail, '?') !== false ? '&' : '?') . 'zoom=0';
             }
+
+            // Translate Google Books English category to Czech genre
+            $genre = null;
+            if (isset($volumeInfo['categories'][0])) {
+                $genre = $this->translateGenre($volumeInfo['categories'][0]);
+            }
+
+            // Get language (ISO 639-1 code: cs, en, de, etc.)
+            $language = $volumeInfo['language'] ?? 'cs'; // Default to Czech
 
             $items[] = [
                 'title' => $volumeInfo['title'] ?? '',
                 'author' => isset($volumeInfo['authors']) ? implode(', ', $volumeInfo['authors']) : '',
                 'isbn' => $isbn,
-                'genre' => isset($volumeInfo['categories'][0]) ? $volumeInfo['categories'][0] : null,
+                'genre' => $genre,
+                'language' => $language,
                 'published_year' => isset($volumeInfo['publishedDate']) ? (int)substr($volumeInfo['publishedDate'], 0, 4) : null,
                 'thumbnail' => $thumbnail,
                 'description' => $volumeInfo['description'] ?? null
@@ -325,5 +389,67 @@ class AdminController {
             error_log("Admin update stock error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při aktualizaci: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Translate Google Books English categories to Czech genres
+     * (Google Books API always returns categories in English, even for Czech books)
+     */
+    private function translateGenre(string $englishCategory): string {
+        // Mapping of common English categories to Czech genres
+        $genreMap = [
+            // Fiction
+            'Fiction' => 'Beletrie',
+            'Juvenile Fiction' => 'Pro děti',
+            'Young Adult Fiction' => 'Pro mládež',
+            'Fantasy' => 'Fantasy',
+            'Science Fiction' => 'Sci-Fi',
+            'Mystery' => 'Detektivka',
+            'Thriller' => 'Thriller',
+            'Horror' => 'Horor',
+            'Romance' => 'Romance',
+            'Historical Fiction' => 'Historická beletrie',
+
+            // Non-fiction
+            'Biography & Autobiography' => 'Biografie',
+            'History' => 'Historie',
+            'Self-Help' => 'Osobní rozvoj',
+            'Psychology' => 'Psychologie',
+            'Philosophy' => 'Filozofie',
+            'Religion' => 'Náboženství',
+            'Science' => 'Věda',
+            'Technology' => 'Technologie',
+            'Computers' => 'Informatika',
+            'Business & Economics' => 'Byznys',
+
+            // Other
+            'Comics & Graphic Novels' => 'Komiksy',
+            'Poetry' => 'Poezie',
+            'Drama' => 'Drama',
+            'Literary Criticism' => 'Literární kritika',
+            'Travel' => 'Cestování',
+            'Cooking' => 'Kuchařky',
+            'Art' => 'Umění',
+            'Music' => 'Hudba',
+            'Sports & Recreation' => 'Sport',
+            'Education' => 'Vzdělávání',
+            'Medical' => 'Medicína',
+            'Law' => 'Právo',
+        ];
+
+        // Check for exact match first
+        if (isset($genreMap[$englishCategory])) {
+            return $genreMap[$englishCategory];
+        }
+
+        // Check for partial match (e.g., "Fiction / Fantasy" -> "Fantasy")
+        foreach ($genreMap as $english => $czech) {
+            if (stripos($englishCategory, $english) !== false) {
+                return $czech;
+            }
+        }
+
+        // Default fallback
+        return 'Ostatní';
     }
 }
