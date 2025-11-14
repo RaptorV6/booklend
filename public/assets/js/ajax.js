@@ -69,19 +69,20 @@ function confirmToast(message) {
 }
 
 /**
- * Escape HTML
+ * Escape HTML and convert newlines to <br>
  */
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
-    return div.innerHTML;
+    return div.innerHTML.replace(/\n/g, '<br>');
 }
 
 /**
  * Rent book
  */
 async function rentBook(bookId) {
-    const confirmed = await confirmToast('Opravdu chcete půjčit tuto knihu?');
+    const message = `Opravdu chcete půjčit tuto knihu?\n\n📅 Podmínky půjčení:\n• Výpůjční doba: 30 dní\n• Prodloužení: kdykoliv o 15 dní (placené)\n• Penalizace: 100 000 Kč za každý týden zpoždění`;
+    const confirmed = await confirmToast(message);
     if (!confirmed) return;
 
     try {
@@ -155,6 +156,46 @@ async function returnBook(rentalId) {
     } catch (error) {
         console.error('Return error:', error);
         window.toast.error('Nastala chyba při vracení.');
+    }
+}
+
+/**
+ * Extend rental (add 15 days to due date)
+ */
+async function extendRental(rentalId) {
+    const confirmed = await confirmToast('Prodloužit výpůjčku o 15 dní? (Bude účtován poplatek)');
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${getBaseUrl()}/api/extend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ rental_id: rentalId })
+        });
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            console.error('Failed to parse JSON:', e);
+            window.toast.error('Neplatná odpověď serveru');
+            return;
+        }
+
+        if (response.ok && data.success) {
+            window.toast.success(data.message || 'Výpůjčka byla úspěšně prodloužena!');
+
+            // Reload to show updated due date and extension count
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            console.error('Extend failed:', data);
+            window.toast.error(data.error || 'Chyba při prodloužení výpůjčky');
+        }
+    } catch (error) {
+        console.error('Extend error:', error);
+        window.toast.error('Nastala chyba při prodloužení.');
     }
 }
 

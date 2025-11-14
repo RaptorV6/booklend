@@ -288,8 +288,8 @@ class BookController {
         }
 
         try {
-            $this->rentalModel->create(Auth::id(), $bookId, 14);
-            jsonResponse(['success' => true, 'message' => 'Kniha půjčena']);
+            $this->rentalModel->create(Auth::id(), $bookId, 30);
+            jsonResponse(['success' => true, 'message' => 'Kniha půjčena na 30 dní']);
         } catch (\Exception $e) {
             error_log("Rent error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při půjčování: ' . $e->getMessage()], 500);
@@ -320,6 +320,41 @@ class BookController {
         } catch (\Exception $e) {
             error_log("Return error: " . $e->getMessage());
             jsonResponse(['error' => 'Chyba při vracení: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function apiExtend(): void {
+        $data = jsonInput();
+        $rentalId = $data['rental_id'] ?? null;
+
+        if (!$rentalId) {
+            jsonResponse(['error' => 'Rental ID required'], 400);
+        }
+
+        $rental = $this->rentalModel->findById($rentalId);
+
+        if (!$rental || $rental['user_id'] != Auth::id()) {
+            jsonResponse(['error' => 'Výpůjčka nenalezena'], 404);
+        }
+
+        if ($rental['returned_at']) {
+            jsonResponse(['error' => 'Kniha už byla vrácena'], 409);
+        }
+
+        try {
+            $success = $this->rentalModel->extendRental($rentalId);
+
+            if ($success) {
+                jsonResponse([
+                    'success' => true,
+                    'message' => 'Výpůjčka prodloužena o 15 dní (poplatek bude účtován)'
+                ]);
+            } else {
+                jsonResponse(['error' => 'Výpůjčku nelze prodloužit'], 400);
+            }
+        } catch (\Exception $e) {
+            error_log("Extend error: " . $e->getMessage());
+            jsonResponse(['error' => 'Chyba při prodloužení: ' . $e->getMessage()], 500);
         }
     }
 }

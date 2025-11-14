@@ -81,6 +81,15 @@ CREATE TABLE rentals (
     due_at DATETIME NOT NULL,
     returned_at DATETIME NULL,
 
+    -- Extension tracking (unlimited extensions allowed)
+    original_due_at DATETIME NULL COMMENT 'Původní splatnost před prvním prodloužením',
+    extension_count INT UNSIGNED DEFAULT 0 COMMENT 'Počet prodloužení (neomezeno)',
+    extended_at DATETIME NULL COMMENT 'Datum posledního prodloužení',
+
+    -- Fine management (100,000 CZK per week overdue)
+    fine_amount DECIMAL(10,2) DEFAULT 0.00 COMMENT 'Výše penále v Kč',
+    fine_paid TINYINT(1) DEFAULT 0 COMMENT 'Zda bylo penále zaplaceno (0=ne, 1=ano)',
+
     -- Computed column: automatically calculates if rental is active
     is_active TINYINT(1) AS (
         CASE WHEN returned_at IS NULL THEN 1 ELSE 0 END
@@ -89,6 +98,8 @@ CREATE TABLE rentals (
     KEY idx_user_active (user_id, is_active),
     KEY idx_book_active (book_id, is_active),
     KEY idx_due (due_at, user_id),
+    KEY idx_fine (fine_amount, fine_paid),
+    KEY idx_extension (extension_count),
 
     CONSTRAINT fk_rentals_user
         FOREIGN KEY (user_id) REFERENCES users(id)

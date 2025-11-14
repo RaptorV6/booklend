@@ -24,6 +24,7 @@ $router->get('/moje-vypujcky', 'UserController', 'loans', 'auth');
 // AJAX routes (protected)
 $router->post('/api/rent', 'BookController', 'apiRent', 'auth');
 $router->post('/api/return', 'BookController', 'apiReturn', 'auth');
+$router->post('/api/extend', 'BookController', 'apiExtend', 'auth');
 
 // Admin routes (protected - admin only)
 $router->get('/admin', 'AdminController', 'dashboard', 'admin');
