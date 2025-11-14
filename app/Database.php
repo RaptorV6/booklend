@@ -63,4 +63,32 @@ class Database {
     public function lastInsertId(): int {
         return (int) $this->connect()->lastInsertId();
     }
+
+    /**
+     * Begin a database transaction
+     */
+    public function beginTransaction(): bool {
+        return $this->connect()->beginTransaction();
+    }
+
+    /**
+     * Commit the current transaction
+     */
+    public function commit(): bool {
+        return $this->connect()->commit();
+    }
+
+    /**
+     * Rollback the current transaction
+     */
+    public function rollback(): bool {
+        return $this->connect()->rollBack();
+    }
+
+    /**
+     * Check if currently inside a transaction
+     */
+    public function inTransaction(): bool {
+        return $this->connect()->inTransaction();
+    }
 }

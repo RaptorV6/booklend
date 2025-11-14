@@ -43,22 +43,115 @@ class Rental {
         return $result !== null;
     }
 
+    /**
+     * Create a new rental with atomic inventory management
+     * Replaces MySQL trigger logic with PHP transaction
+     *
+     * @param int $userId User ID
+     * @param int $bookId Book ID
+     * @param int $days Rental duration (default 30)
+     * @return int Rental ID
+     * @throws \Exception If no available copies or database error
+     */
     public function create(int $userId, int $bookId, int $days = 30): int {
         $dueDate = date('Y-m-d H:i:s', strtotime("+{$days} days"));
 
-        $this->db->query(
-            "INSERT INTO rentals (user_id, book_id, due_at) VALUES (?, ?, ?)",
-            [$userId, $bookId, $dueDate]
-        );
+        try {
+            // Start transaction for atomic operation
+            $this->db->beginTransaction();
 
-        return $this->db->lastInsertId();
+            // Lock book row and check available copies
+            // FOR UPDATE prevents race conditions between concurrent requests
+            $book = $this->db->fetch(
+                "SELECT id, available_copies FROM books WHERE id = ? FOR UPDATE",
+                [$bookId]
+            );
+
+            if (!$book) {
+                throw new \Exception("Kniha nenalezena");
+            }
+
+            if ($book['available_copies'] < 1) {
+                throw new \Exception("No available copies");
+            }
+
+            // Decrease available copies
+            $this->db->execute(
+                "UPDATE books SET available_copies = available_copies - 1 WHERE id = ?",
+                [$bookId]
+            );
+
+            // Create rental record
+            $this->db->query(
+                "INSERT INTO rentals (user_id, book_id, due_at) VALUES (?, ?, ?)",
+                [$userId, $bookId, $dueDate]
+            );
+
+            $rentalId = $this->db->lastInsertId();
+
+            // Commit transaction
+            $this->db->commit();
+
+            return $rentalId;
+
+        } catch (\Exception $e) {
+            // Rollback on any error
+            if ($this->db->inTransaction()) {
+                $this->db->rollback();
+            }
+            throw $e;
+        }
     }
 
+    /**
+     * Return a book with atomic inventory management
+     * Replaces MySQL trigger logic with PHP transaction
+     *
+     * @param int $rentalId Rental ID
+     * @return void
+     * @throws \Exception If rental not found or database error
+     */
     public function returnBook(int $rentalId): void {
-        $this->db->query(
-            "UPDATE rentals SET returned_at = NOW() WHERE id = ?",
-            [$rentalId]
-        );
+        try {
+            // Start transaction for atomic operation
+            $this->db->beginTransaction();
+
+            // Get rental details
+            $rental = $this->db->fetch(
+                "SELECT id, book_id, returned_at FROM rentals WHERE id = ?",
+                [$rentalId]
+            );
+
+            if (!$rental) {
+                throw new \Exception("Výpůjčka nenalezena");
+            }
+
+            if ($rental['returned_at'] !== null) {
+                throw new \Exception("Kniha už byla vrácena");
+            }
+
+            // Mark rental as returned
+            $this->db->execute(
+                "UPDATE rentals SET returned_at = NOW() WHERE id = ?",
+                [$rentalId]
+            );
+
+            // Increase available copies
+            $this->db->execute(
+                "UPDATE books SET available_copies = available_copies + 1 WHERE id = ?",
+                [$rental['book_id']]
+            );
+
+            // Commit transaction
+            $this->db->commit();
+
+        } catch (\Exception $e) {
+            // Rollback on any error
+            if ($this->db->inTransaction()) {
+                $this->db->rollback();
+            }
+            throw $e;
+        }
     }
 
     public function findById(int $id): ?array {
