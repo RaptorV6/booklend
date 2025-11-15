@@ -23,6 +23,10 @@ $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
             ($_SERVER['SERVER_PORT'] ?? 80) == 443 ? 'https://' : 'http://';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $scriptPath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+
+// Remove /public from path if present (production setup)
+$scriptPath = str_replace('/public', '', $scriptPath);
+
 define('BASE_URL', $protocol . $host . $scriptPath);
 
 // Google Books API (high-resolution images + metadata)

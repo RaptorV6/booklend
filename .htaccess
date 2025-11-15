@@ -5,5 +5,8 @@ Options -Indexes
 RewriteEngine On
 
 # Redirect to public folder (but keep URL clean)
-RewriteCond %{REQUEST_URI} !^/booklend/public/
+# Works for both localhost/booklend and production
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ public/$1 [L]

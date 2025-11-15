@@ -129,6 +129,12 @@ async function searchBooks(query) {
         }
 
         const data = await response.json();
+
+        // Debug: Show API info in console
+        if (data.debug) {
+            console.log('🔍 Google Books API Debug:', data.debug);
+        }
+
         displaySearchResults(data.items || []);
     } catch (error) {
         console.error('Search error:', error);
