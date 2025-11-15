@@ -4,8 +4,16 @@
     <h1 class="page-title">Moje výpůjčky</h1>
 
     <?php if (empty($rentals)): ?>
-        <p>Zatím jste si nepůjčili žádnou knihu.</p>
-        <a href="<?= BASE_URL ?>/" class="btn btn-primary">Prohlédnout katalog</a>
+        <div class="empty-state">
+            <div class="empty-state-content">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" style="margin: 0 auto 1.5rem; display: block; opacity: 0.5;">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 1.5rem;">Zatím jste si nepůjčili žádnou knihu.</p>
+                <a href="<?= BASE_URL ?>/" class="btn btn-primary">Prohlédnout katalog</a>
+            </div>
+        </div>
     <?php else: ?>
         <div class="loans-list">
             <?php foreach ($rentals as $rental): ?>

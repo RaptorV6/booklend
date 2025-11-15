@@ -217,13 +217,26 @@ class AdminController {
         $isISBN = preg_match('/^\d{10}(\d{3})?$/', $cleanQuery);
 
         // Format query for Google Books API
-        $searchQuery = $isISBN ? "isbn:{$cleanQuery}" : $query;
+        // Format query for better Czech book search
+        if ($isISBN) {
+            $searchQuery = "isbn:{$cleanQuery}";
+        } else {
+            // Try to detect if query contains Czech-specific terms
+            $hasCzechChars = preg_match('/[áčďéěíňóřšťúůýž]/iu', $query);
 
-        // Search in Google Books API - prefer Czech market but don't restrict language
-        // (many Czech translations are not marked as 'cs' in Google Books)
+            // For Czech queries, add language restriction to get better results
+            $langParam = $hasCzechChars ? "&langRestrict=cs" : "";
+
+            // Use intitle: for better matching when not ISBN
+            $searchQuery = "intitle:" . $query;
+        }
+
+        // Search in Google Books API with optimized parameters
         $url = GOOGLE_BOOKS_API . "?q=" . urlencode($searchQuery)
-            . "&maxResults=20"
-            . "&country=CZ"           // Prefer Czech market
+            . "&maxResults=40"          // More results for better coverage
+            . "&country=CZ"             // Prefer Czech market
+            . "&orderBy=relevance"      // Best matches first
+            . (isset($langParam) ? $langParam : "")
             . "&key=" . GOOGLE_BOOKS_API_KEY;
 
         $ch = curl_init($url);

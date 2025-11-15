@@ -653,6 +653,11 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
+    /* Logo responsive sizing */
+    .navbar .logo {
+        font-size: 1.2rem;
+    }
+
     /* Hamburger visible on mobile */
     .hamburger {
         display: flex;
@@ -717,13 +722,14 @@
         border: none;
         border-radius: 0;
         margin-top: 0;
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
+        max-height: 500px;
+        overflow: visible;
+        transition: none;
     }
 
-    .user-dropdown.active {
-        max-height: 500px;
+    /* User avatar - disable click on mobile since dropdown is always expanded */
+    .user-avatar {
+        cursor: default;
     }
 
     .user-info {
@@ -738,6 +744,7 @@
     /* Mobile Catalog Controls */
     .catalog-controls {
         flex-direction: column;
+        overflow-x: hidden;
     }
 
     #pagination-controls {
@@ -755,13 +762,24 @@
         overflow-x: auto;
         flex-wrap: nowrap;
         -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        padding-bottom: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+        padding-bottom: 8px;
         flex: 1 0 100%;
+        max-width: 100%;
     }
 
     .filter-chips::-webkit-scrollbar {
-        display: none;
+        height: 4px;
+    }
+
+    .filter-chips::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .filter-chips::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
     }
 
     .filter-chip {
@@ -804,6 +822,11 @@
 }
 
 @media (max-width: 480px) {
+    /* Logo even smaller on tiny screens */
+    .navbar .logo {
+        font-size: 1rem;
+    }
+
     .book-grid {
         grid-template-columns: repeat(2, 1fr);
     }
