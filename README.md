@@ -73,29 +73,6 @@ COMMIT  // Vše najednou nebo nic
 
 ---
 
-## 🚀 Instalace
-
-### Localhost (XAMPP)
-
-1. **Nainstaluj XAMPP** → Spusť Apache + MySQL
-
-2. **Zkopíruj projekt** do `C:\xampp\htdocs\booklend`
-
-3. **Vytvoř databázi:**
-   - Jdi na `http://localhost/phpmyadmin`
-   - Vytvoř databázi `booklend` (utf8mb4_unicode_ci)
-   - Importuj `database/schema.sql`
-
-4. **Otevři aplikaci:** `http://localhost/booklend`
-
-### Hosting bez TRIGGER privilege
-
-1. Importuj `database/schema-no-triggers.sql` místo `schema.sql`
-2. PHP transakce zajistí správnou funkcionalitu
-3. `BASE_URL` se detekuje automaticky (není třeba nastavovat)
-
----
-
 ## 📂 Struktura projektu
 
 ```
@@ -138,6 +115,93 @@ booklend/
 ✅ **Responzivní** - Mobile-first design (adaptivní logo, optimalizované karty)
 ✅ **Bezpečné** - Bcrypt, prepared statements, XSS protection
 ✅ **SEO** - Přátelské URL, meta tagy, sitemap, Open Graph
+
+---
+
+## 📊 Úvodní studie vs. Současný stav
+
+### Informační architektura
+
+| Plánováno | Implementováno | Status |
+|-----------|----------------|--------|
+| Domů | `/` - Katalog knih | ✅ |
+| Katalog knih | `/` - Hlavní stránka | ✅ |
+| Detail knihy | `/kniha/{slug}` | ✅ |
+| Můj účet / Moje výpůjčky | `/user/profile` + `/user/loans` | ✅ |
+| Administrace knih | `/admin` | ✅ |
+| Přihlášení / Registrace | `/login` + `/register` | ✅ |
+| **Ceník** | **NENÍ** | ❌ |
+
+### SEO Strategie - Implementace
+
+**✅ Meta tagy**
+- Homepage: `<title>Katalog knih - BookLend</title>` + description
+- Detail knihy: `<title>{title} – {author} | BookLend</title>` + dynamický popis
+
+**✅ Strukturovaná data (Schema.org JSON-LD)**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "{title}",
+  "author": { "@type": "Person", "name": "{author}" },
+  "isbn": "{isbn}",
+  "image": "{thumbnail}"
+}
+```
+
+**✅ Open Graph (Facebook/Twitter sdílení)**
+```html
+<meta property="og:type" content="book">
+<meta property="og:title" content="{title} – {author}">
+<meta property="og:description" content="{description}">
+<meta property="og:image" content="{thumbnail}">
+<meta property="og:url" content="{BASE_URL}/kniha/{slug}">
+<meta name="twitter:card" content="summary_large_image">
+```
+
+**✅ robots.txt**
+```
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Sitemap: {BASE_URL}/sitemap.xml
+```
+
+**✅ sitemap.xml**
+- Dynamicky generovaný seznam všech knih
+- Priority: homepage (1.0), knihy (0.8)
+- Včetně `<lastmod>` pro každou knihu
+
+**✅ URL struktura**
+- Homepage: `/`
+- Detail knihy: `/kniha/{slug}` (SEO-friendly bez diakritiky)
+- Filtry: `/?genre=Fantasy&year=2020` (GET parametry)
+
+### Klíčová slova - Pokrytí
+
+| Kategorie | Plánovaná slova | Implementace |
+|-----------|-----------------|--------------|
+| **Homepage** | půjčovna knih, online půjčovna, katalog knih | ✅ V meta description |
+| **Detail knihy** | {název}, {autor}, {isbn}, "půjčit" | ✅ Dynamicky v title/description |
+| **Žánrové filtry** | fantasy knihy, sci-fi knihy, detektivky | ✅ Filtry fungují, slova v UI |
+
+### Rozšíření nad rámec studie
+
+**➕ Navíc implementováno:**
+1. **Prodlužování výpůjček** - Neomezené (+15 dní, placené)
+2. **Penalizace** - Automatická kalkulace (100 000 Kč/týden po splatnosti)
+3. **Google Books API** - Automatické stahování dat o knihách
+4. **Prioritizace českých knih** - 3-metodová detekce pro lepší UX
+5. **PHP transakce** - Náhrada MySQL triggerů (kompatibilita s levnými hostingy)
+6. **AUTO-DETECT BASE_URL** - Bez manuální konfigurace
+7. **Mobile-first responzivita** - Plně optimalizováno pro mobily
+
+**Poznámky:**
+- ❌ **Ceník** nebyl implementován (výpůjčky jsou v aplikaci zdarma, prodloužení placené ale bez platební brány)
+- ✅ Všechny ostatní body úvodní studie **splněny**
+- ✅ SEO metriky: Rychlost < 3s ✅, Responzivita ✅, Indexace ✅
 
 ---
 
