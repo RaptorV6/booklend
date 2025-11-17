@@ -216,27 +216,20 @@ class AdminController {
         $cleanQuery = str_replace(['-', ' '], '', $query);
         $isISBN = preg_match('/^\d{10}(\d{3})?$/', $cleanQuery);
 
-        // Format query for Google Books API
         // Format query for better Czech book search
         if ($isISBN) {
             $searchQuery = "isbn:{$cleanQuery}";
         } else {
-            // Try to detect if query contains Czech-specific terms
-            $hasCzechChars = preg_match('/[áčďéěíňóřšťúůýž]/iu', $query);
-
-            // For Czech queries, add language restriction to get better results
-            $langParam = $hasCzechChars ? "&langRestrict=cs" : "";
-
             // Use intitle: for better matching when not ISBN
             $searchQuery = "intitle:" . $query;
         }
 
         // Search in Google Books API with optimized parameters
+        // NO langRestrict - let sorting by Czech chars do the work instead
         $url = GOOGLE_BOOKS_API . "?q=" . urlencode($searchQuery)
             . "&maxResults=40"          // More results for better coverage
             . "&country=CZ"             // Prefer Czech market
             . "&orderBy=relevance"      // Best matches first
-            . (isset($langParam) ? $langParam : "")
             . "&key=" . GOOGLE_BOOKS_API_KEY;
 
         $ch = curl_init($url);
@@ -331,7 +324,98 @@ class AdminController {
             ];
         }
 
-        jsonResponse(['items' => $items]);
+        // Sort results: Czech books first (strict detection to avoid false positives)
+        usort($items, function($a, $b) {
+            $titleA = mb_strtolower($a['title'] ?? '');
+            $titleB = mb_strtolower($b['title'] ?? '');
+
+            // Method 1: Czech characters (ě, š, č, ř, ž, ý, á, í, é, ů, ú, ň, ť, ď)
+            $aHasCzechChars = preg_match('/[áčďéěíňóřšťúůýž]/iu', $titleA);
+            $bHasCzechChars = preg_match('/[áčďéěíňóřšťúůýž]/iu', $titleB);
+
+            // Method 2: Czech connector "harry potter a " (followed by space and word)
+            // More specific than just " a " to avoid false positives like "- a Magical"
+            $aHasCzechPattern = preg_match('/harry\s+potter\s+a\s+[a-záčďéěíňóřšťúůýž]/iu', $titleA);
+            $bHasCzechPattern = preg_match('/harry\s+potter\s+a\s+[a-záčďéěíňóřšťúůýž]/iu', $titleB);
+
+            // Method 3: Czech book title phrases (both with and without diacritics)
+            $czechPhrases = [
+                'kámen mudrců', 'kamen mudrcu',
+                'tajemná komnata', 'tajemna komnata',
+                'vězeň z azkabanu', 'vezen z azkabanu',
+                'ohnivý pohár', 'ohnivy pohar',
+                'fénixův řád', 'fenixuv rad',
+                'princ dvojí krve', 'princ dvoji krve',
+                'relikvie smrti',
+                'prokletý dítě', 'proklety dite'
+            ];
+            $aHasCzechPhrase = false;
+            $bHasCzechPhrase = false;
+            foreach ($czechPhrases as $phrase) {
+                if (str_contains($titleA, $phrase)) $aHasCzechPhrase = true;
+                if (str_contains($titleB, $phrase)) $bHasCzechPhrase = true;
+            }
+
+            // Combine: Czech chars OR Czech pattern OR Czech phrase
+            $aIsCzech = $aHasCzechChars || $aHasCzechPattern || $aHasCzechPhrase;
+            $bIsCzech = $bHasCzechChars || $bHasCzechPattern || $bHasCzechPhrase;
+
+            // Czech books go first
+            if ($aIsCzech && !$bIsCzech) return -1;
+            if (!$aIsCzech && $bIsCzech) return 1;
+
+            return 0;
+        });
+
+        // Debug: Show languages and Czech detection for all results (using same logic as sort)
+        $languages = array_map(function($item) {
+            $title = mb_strtolower($item['title'] ?? '');
+
+            $czechChars = preg_match('/[áčďéěíňóřšťúůýž]/iu', $title);
+            $czechPattern = preg_match('/harry\s+potter\s+a\s+[a-záčďéěíňóřšťúůýž]/iu', $title);
+
+            $czechPhrases = [
+                'kámen mudrců', 'kamen mudrcu',
+                'tajemná komnata', 'tajemna komnata',
+                'vězeň z azkabanu', 'vezen z azkabanu',
+                'ohnivý pohár', 'ohnivy pohar',
+                'fénixův řád', 'fenixuv rad',
+                'princ dvojí krve', 'princ dvoji krve',
+                'relikvie smrti',
+                'prokletý dítě', 'proklety dite'
+            ];
+            $foundPhrase = false;
+            foreach ($czechPhrases as $phrase) {
+                if (str_contains($title, $phrase)) {
+                    $foundPhrase = $phrase;
+                    break;
+                }
+            }
+
+            $isCzech = $czechChars || $czechPattern || $foundPhrase;
+            return [
+                'title' => substr($item['title'], 0, 40) . '...',
+                'lang' => $item['language'] ?? 'unknown',
+                'isCzech' => $isCzech ? 'YES' : 'no',
+                'why' => $czechChars ? 'chars' : ($czechPattern ? 'pattern_HP_a' : ($foundPhrase ? 'phrase:' . $foundPhrase : 'none'))
+            ];
+        }, $items);
+
+        // Return results with debug info to verify deployment
+        jsonResponse([
+            'items' => $items,
+            'debug' => [
+                'query' => $query,
+                'isISBN' => $isISBN,
+                'langRestrict' => 'REMOVED - strict phrase detection instead',
+                'detection' => 'Czech chars + "harry potter a X" pattern + Czech title phrases',
+                'apiUrl' => $url,
+                'totalResults' => count($items),
+                'czechFirst' => true,
+                'languages' => $languages,
+                'codeVersion' => '2025-11-15-v9-strict-phrases-' . time()
+            ]
+        ]);
     }
 
     public function apiCheckIsbn(): void {

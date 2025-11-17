@@ -819,6 +819,35 @@
     .book-author {
         font-size: 0.85rem;
     }
+
+    /* Loan cards - mobile layout */
+    .loan-card {
+        grid-template-columns: 70px 1fr;
+        gap: 1rem;
+    }
+
+    .loan-cover {
+        width: 70px;
+        height: 98px;
+    }
+
+    .loan-cover-placeholder {
+        width: 70px;
+        height: 98px;
+        font-size: 2rem;
+    }
+
+    .loan-actions {
+        grid-column: 1 / -1; /* Full width on mobile */
+        flex-direction: column; /* Stack buttons vertically */
+        margin-top: 0.5rem;
+    }
+
+    .loan-actions .btn {
+        width: 100%;
+        flex: 0 0 auto; /* No flex growth on mobile */
+        min-width: auto;
+    }
 }
 
 @media (max-width: 480px) {

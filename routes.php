@@ -1,9 +1,5 @@
 <?php
 
-// ═══════════════════════════════════════════════════════════
-// ROUTES
-// ═══════════════════════════════════════════════════════════
-
 // Public routes
 $router->get('/', 'BookController', 'catalog');
 $router->get('/kniha/{slug}', 'BookController', 'detail');
