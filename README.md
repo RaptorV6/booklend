@@ -11,14 +11,15 @@
 3. [Datový model](#datový-model)
 4. [Use Case](#use-case)
 5. [Použité technologie](#použité-technologie)
-6. [Frameworky](#frameworky)
-7. [Bezpečnost](#bezpečnost)
-8. [Příklady implementace](#příklady-implementace)
-9. [Testování](#testování)
-10. [Monitoring](#monitoring)
-11. [Tým, kompetence, strávená doba](#tým-kompetence-strávená-doba)
-12. [Závěr](#závěr)
-13. [Zdroje](#zdroje)
+   - [Frameworky](#frameworky)
+   - [Bezpečnost](#bezpečnost)
+   - [Zdroje](#zdroje-technologie)
+6. [Příklady implementace](#příklady-implementace)
+7. [Testování](#testování)
+8. [Monitoring](#monitoring)
+9. [Tým, kompetence, strávená doba](#tým-kompetence-strávená-doba)
+10. [Závěr](#závěr)
+11. [Zdroje](#zdroje)
 
 ---
 
@@ -92,8 +93,8 @@ Aplikace používá relační databázi MySQL se třemi tabulkami.
 ┌─────────────────────────────────────┐
 │              rentals                │
 ├─────────────────────────────────────┤
-│ id              INT UNSIGNED PK AI  │
-│ user_id         INT UNSIGNED FK     │◄──┐
+│ id              INT UNSIGNED PK AI  │◄──┐
+│ user_id         INT UNSIGNED FK     │   │
 │ book_id         INT UNSIGNED FK     │   │
 │ rented_at       TIMESTAMP           │   │
 │ due_at          DATETIME            │   │
@@ -128,7 +129,7 @@ Aplikace používá relační databázi MySQL se třemi tabulkami.
 └─────────────────────────────────────┘
 ```
 
-### Klíčové vlastnosti datového modelu
+### Klíčové vlastnosti
 
 - **Soft delete** — záznamy se nemažou fyzicky, pouze se nastaví `deleted_at`
 - **Computed column** — `rentals.is_active` se vypočítává automaticky z `returned_at`
@@ -249,9 +250,67 @@ booklend/
 HTTP požadavek → public/index.php → Router → Middleware → Controller → Model → View → HTTP odpověď
 ```
 
+### Editace obsahu webu (PHP administrace)
+
+Obsah webu spravuje administrátor přes vestavěný admin panel na `/admin`. Jde o plnohodnotný CRUD systém implementovaný v PHP.
+
+| Akce | Endpoint | Popis |
+|------|----------|-------|
+| Zobrazit katalog | `GET /admin` | Přehled všech knih, vyhledávání, statistiky |
+| Přidat knihu | `POST /api/admin/create` | Ruční zadání nebo import z Google Books API |
+| Upravit knihu | `POST /api/admin/update` | Editace všech polí (název, autor, žánr, rok, jazyk, popis, obálka) |
+| Změnit počet kopií | `POST /api/admin/update-stock` | Úprava `total_copies` a `available_copies` |
+| Smazat knihu | `POST /api/admin/delete` | Soft delete – nastaví `deleted_at`, kniha zmizí z katalogu |
+
+**Google Books API** — admin zadá název nebo ISBN a systém automaticky doplní metadata. Výsledky jsou cachovány 30 dní v `public/cache/`.
+
+### Responzivita
+
+Aplikace používá **mobile-first přístup** — styly jsou nejprve navrženy pro malé obrazovky a postupně rozšiřovány pro větší.
+
+| Breakpoint | Zařízení | Změny layoutu |
+|-----------|----------|---------------|
+| `< 480px` | Malý mobil | 1 sloupec karet, kompaktní navbar |
+| `480px–768px` | Mobil / tablet | 2 sloupce karet, hamburger menu |
+| `768px–1024px` | Tablet | 3 sloupce karet |
+| `> 1024px` | Desktop | 4–6 sloupců karet, plný navbar |
+
+### SEO, sitemap a robots.txt
+
+**sitemap.xml** — dynamicky generovaný soubor `public/sitemap.php`, přesměrovaný přes `.htaccess`:
+```
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+```
+
+**robots.txt** — generovaný přes `public/robots.php`, blokuje `/admin` a `/api/`:
+```
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Sitemap: https://ete89e.pef.czu.cz/zs2526/09/booklend/public/sitemap.xml
+```
+
+**Meta tagy a strukturovaná data** — každá stránka obsahuje Open Graph a Schema.org JSON-LD:
+```html
+<meta property="og:type" content="book">
+<meta property="og:title" content="Eragon – Christopher Paolini">
+<meta property="og:image" content="https://books.google.com/...">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "Eragon",
+  "author": { "@type": "Person", "name": "Christopher Paolini" },
+  "isbn": "9788025303603"
+}
+</script>
+```
+
 ---
 
-## Frameworky
+### Frameworky
 
 Aplikace záměrně **nepoužívá žádný PHP framework** (Laravel, Symfony apod.). Důvody:
 - Výuková hodnota – pochopení principů MVC od základu
@@ -271,117 +330,7 @@ Aplikace záměrně **nepoužívá žádný PHP framework** (Laravel, Symfony ap
 
 ---
 
-## Editace obsahu, responzivita a SEO
-
-### Editace obsahu webu (PHP administrace)
-
-Obsah webu (katalog knih) spravuje administrátor přes vestavěný admin panel dostupný na `/admin`. Jde o plnohodnotný CRUD systém implementovaný v PHP.
-
-**Operace dostupné adminovi:**
-
-| Akce | Endpoint | Popis |
-|------|----------|-------|
-| Zobrazit katalog | `GET /admin` | Přehled všech knih, vyhledávání, statistiky |
-| Přidat knihu | `POST /api/admin/create` | Ruční zadání nebo import z Google Books API |
-| Upravit knihu | `POST /api/admin/update` | Editace všech polí (název, autor, žánr, rok, jazyk, popis, obálka) |
-| Změnit počet kopií | `POST /api/admin/update-stock` | Úprava `total_copies` a `available_copies` |
-| Smazat knihu | `POST /api/admin/delete` | Soft delete – nastaví `deleted_at`, kniha zmizí z katalogu |
-
-**Google Books API integrace** zjednodušuje přidávání knih — admin zadá název nebo ISBN a systém automaticky doplní metadata (název, autor, žánr, rok vydání, popis, URL obálky). Výsledky API jsou cachovány 30 dní v `public/cache/`.
-
-### Responzivita
-
-Aplikace používá **mobile-first přístup** — styly jsou nejprve navrženy pro malé obrazovky a postupně rozšiřovány pro větší.
-
-**Breakpointy (responsive.css):**
-
-| Breakpoint | Zařízení | Změny layoutu |
-|-----------|----------|---------------|
-| `< 480px` | Malý mobil | 1 sloupec karet, kompaktní navbar |
-| `480px–768px` | Mobil / tablet | 2 sloupce karet, hamburger menu |
-| `768px–1024px` | Tablet | 3 sloupce karet |
-| `> 1024px` | Desktop | 4–6 sloupců karet, plný navbar |
-
-**Klíčové prvky responzivity:**
-- **Hamburger menu** — na mobilech se navigace skryje za ikonu ≡ (implementováno v Vanilla JS)
-- **CSS Grid / Flexbox** — knihovní karty se automaticky přizpůsobují šířce obrazovky
-- **Relativní jednotky** — `em`, `rem`, `%`, `vw` místo pevných px hodnot
-- **Obrázky obálek** — `max-width: 100%`, `object-fit: cover` pro zachování poměru stran
-
-### SEO
-
-#### sitemap.xml
-
-Dynamicky generovaný soubor `public/sitemap.php` vrací XML s URL všech knih v katalogu. Apache rewrite pravidlo v `public/.htaccess` přesměrovává `/sitemap.xml` → `sitemap.php`:
-
-```
-RewriteRule ^sitemap\.xml$ sitemap.php [L]
-```
-
-Ukázka výstupu:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://ete89e.pef.czu.cz/zs2526/09/booklend/public/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://ete89e.pef.czu.cz/zs2526/09/booklend/public/kniha/eragon-mekka-vazba</loc>
-    <lastmod>2025-11-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <!-- ... všechny knihy ... -->
-</urlset>
-```
-
-#### robots.txt
-
-Dynamicky generovaný soubor `public/robots.php` (rewrite: `/robots.txt` → `robots.php`) blokuje indexaci administrace a API endpointů a odkazuje na sitemap:
-
-```
-User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /api/
-
-Sitemap: https://ete89e.pef.czu.cz/zs2526/09/booklend/public/sitemap.xml
-```
-
-#### Meta tagy a strukturovaná data
-
-Každá stránka obsahuje SEO meta tagy generované dynamicky v PHP:
-
-```html
-<!-- Základní meta tagy -->
-<title>Eragon – měkká vazba – Christopher Paolini | BookLend</title>
-<meta name="description" content="...">
-
-<!-- Open Graph (sdílení na sociálních sítích) -->
-<meta property="og:type" content="book">
-<meta property="og:title" content="Eragon – měkká vazba – Christopher Paolini">
-<meta property="og:image" content="https://books.google.com/...">
-
-<!-- Schema.org JSON-LD (strukturovaná data pro Google) -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Book",
-  "name": "Eragon – měkká vazba",
-  "author": { "@type": "Person", "name": "Christopher Paolini" },
-  "isbn": "9788025303603",
-  "image": "https://books.google.com/..."
-}
-</script>
-```
-
----
-
-## Bezpečnost
-
-### Implementovaná opatření
+### Bezpečnost
 
 | Hrozba | Opatření |
 |--------|----------|
@@ -393,35 +342,19 @@ Každá stránka obsahuje SEO meta tagy generované dynamicky v PHP:
 | Race conditions | `SELECT ... FOR UPDATE` v transakcích při půjčení |
 | Directory traversal | `Options -Indexes` v `.htaccess` |
 
-### Příklad: prepared statement
-
 ```php
-// BEZPEČNĚ – parametry jsou escapované PDO driverem
+// Prepared statement – ochrana proti SQL injection
 $user = $this->db->fetch(
     "SELECT * FROM users WHERE email = ? AND is_active = 1",
     [$email]
 );
 
-// NIKDY TAKTO – přímá interpolace = SQL injection
-// "SELECT * FROM users WHERE email = '$email'"
-```
-
-### Příklad: výstupní sanitizace
-
-```php
-// helpers.php
+// XSS ochrana – výstupní sanitizace
 function e(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
-// Použití v šabloně
-<h1><?= e($book['title']) ?></h1>
-```
-
-### Autorizace
-
-```php
-// Middleware v Routeru – admin route
+// Autorizace – middleware v routeru
 if ($route['middleware'] === 'admin') {
     if (!Auth::isAdmin()) {
         header('Location: ' . BASE_URL . '/');
@@ -429,6 +362,19 @@ if ($route['middleware'] === 'admin') {
     }
 }
 ```
+
+---
+
+### Zdroje (technologie) {#zdroje-technologie}
+
+- [PHP Dokumentace – PDO](https://www.php.net/manual/en/book.pdo.php)
+- [PHP Dokumentace – password_hash()](https://www.php.net/manual/en/function.password-hash.php)
+- [Google Books API – dokumentace](https://developers.google.com/books/docs/v1/using)
+- [MDN Web Docs – Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+- [OWASP – SQL Injection Prevention](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
+- [OWASP – XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
+- [Schema.org – Book](https://schema.org/Book)
+- [Apache mod_rewrite dokumentace](https://httpd.apache.org/docs/2.4/mod/mod_rewrite.html)
 
 ---
 
@@ -442,7 +388,7 @@ public function rentBook(int $userId, int $bookId): array {
     try {
         $this->db->beginTransaction();
 
-        // Zamknout řádek pro čtení – zabrání souběžnému půjčení
+        // Zamknout řádek – zabrání souběžnému půjčení téže knihy
         $book = $this->db->fetch(
             "SELECT * FROM books WHERE id = ? AND deleted_at IS NULL FOR UPDATE",
             [$bookId]
@@ -500,10 +446,9 @@ public function rentBook(int $userId, int $bookId): array {
 // app/Controllers/AdminController.php
 private function isCzechBook(array $book): bool {
     $title = $book['title'] ?? '';
-    $czechChars = '/[ěščřžýáíéůúňťď]/iu';
 
-    // Metoda 1: České znaky v názvu
-    if (preg_match($czechChars, $title)) {
+    // Metoda 1: České znaky v názvu (ě, š, č, ř, ž, ý, á, í, é, ů, ú, ň, ť, ď)
+    if (preg_match('/[ěščřžýáíéůúňťď]/iu', $title)) {
         return true;
     }
 
@@ -513,31 +458,22 @@ private function isCzechBook(array $book): bool {
     }
 
     // Metoda 3: Známé české fráze
-    $czechPhrases = [
-        'kámen mudrců', 'tajemná komnata', 'vězeň z azkabanu',
-        'relikvie smrti', 'ohnivý pohár', 'fénixův řád'
-    ];
+    $czechPhrases = ['kámen mudrců', 'tajemná komnata', 'relikvie smrti'];
     foreach ($czechPhrases as $phrase) {
-        if (mb_stripos($title, $phrase) !== false) {
-            return true;
-        }
+        if (mb_stripos($title, $phrase) !== false) return true;
     }
 
     return false;
 }
 
 private function sortBooksByLanguage(array $books): array {
-    // České knihy na začátek, ostatní za nimi
-    usort($books, function($a, $b) {
-        $aIsCzech = $this->isCzechBook($a);
-        $bIsCzech = $this->isCzechBook($b);
-        return $bIsCzech - $aIsCzech;
-    });
+    // České knihy na začátek výsledků
+    usort($books, fn($a, $b) => $this->isCzechBook($b) - $this->isCzechBook($a));
     return $books;
 }
 ```
 
-### 3. Vlastní router s parametry
+### 3. Vlastní router s URL parametry
 
 ```php
 // app/Router.php
@@ -549,19 +485,18 @@ public function dispatch(string $requestMethod, string $uri): void {
     if ($basePath && strpos($uri, $basePath) === 0) {
         $uri = substr($uri, strlen($basePath));
     }
-
     $uri = rtrim($uri, '/') ?: '/';
 
     foreach ($this->routes as $route) {
         if ($route['method'] !== $requestMethod) continue;
 
-        // Převod {slug} → regex capture group
+        // Převod {slug} → regex capture group: /kniha/{slug} → #^/kniha/([^/]+)$#
         $pattern = preg_replace('/\{([a-z]+)\}/', '([^/]+)', $route['path']);
         $pattern = "#^{$pattern}$#";
 
         if (preg_match($pattern, $uri, $matches)) {
-            array_shift($matches); // Odstranit celý match
-            // ... middleware kontrola, spuštění controlleru
+            array_shift($matches); // Odstranit celý match, ponechat capture groups
+            // Spuštění middleware + controlleru...
         }
     }
 
@@ -576,47 +511,45 @@ public function dispatch(string $requestMethod, string $uri): void {
 
 Testování bylo prováděno manuálně (uživatelské testování) v prohlížeči Chrome a Firefox.
 
-### Testovací scénáře
-
 | # | Scénář | Postup | Očekávaný výsledek | Výsledek |
 |---|--------|--------|--------------------|----------|
 | T-01 | Registrace nového uživatele | Vyplnit formulář s platným emailem a heslem (min. 6 znaků) | Účet vytvořen, přesměrování na katalog | ✅ OK |
 | T-02 | Přihlášení s chybným heslem | Zadat správný email, špatné heslo | Zobrazení chybové hlášky, nezalogování | ✅ OK |
-| T-03 | Půjčení dostupné knihy | Přihlásit se, otevřít detail knihy s available_copies > 0, kliknout Půjčit | Výpůjčka vytvořena, available_copies -1 | ✅ OK |
+| T-03 | Půjčení dostupné knihy | Přihlásit se, otevřít detail knihy, kliknout Půjčit | Výpůjčka vytvořena, available_copies -1 | ✅ OK |
 | T-04 | Půjčení nedostupné knihy | Pokusit se půjčit knihu s available_copies = 0 | Tlačítko deaktivováno, hlášení „Nedostupná" | ✅ OK |
-| T-05 | Půjčení téže knihy dvakrát | Pokusit se půjčit knihu, kterou uživatel již má | Chybová hláška „Tuto knihu již máte půjčenou" | ✅ OK |
+| T-05 | Půjčení téže knihy dvakrát | Půjčit knihu, kterou uživatel již má | Chybová hláška „Tuto knihu již máte půjčenou" | ✅ OK |
 | T-06 | Prodloužení výpůjčky | V sekci Výpůjčky kliknout Prodloužit | due_at +15 dní, extension_count +1 | ✅ OK |
 | T-07 | Vrácení knihy | Kliknout Vrátit u aktivní výpůjčky | returned_at nastaven, available_copies +1 | ✅ OK |
-| T-08 | Přidání knihy adminem | V admin panelu vyhledat knihu přes Google Books API, uložit | Kniha přidána do katalogu s obálkou | ✅ OK |
+| T-08 | Přidání knihy adminem | Vyhledat knihu přes Google Books API, uložit | Kniha přidána do katalogu s obálkou | ✅ OK |
 | T-09 | Filtrování katalogu | Vybrat žánr „Fantasy", rok „2000" | Zobrazeny pouze odpovídající knihy | ✅ OK |
-| T-10 | Přístup na /admin bez role | Přihlásit se jako běžný uživatel, navštívit /admin | Přesměrování na katalog (403 logika) | ✅ OK |
-| T-11 | Responzivita | Otevřít aplikaci na mobilním zařízení (375px) | Hamburger menu, karty v jednom sloupci | ✅ OK |
-| T-12 | SQL injection pokus | Zadat `' OR '1'='1` do vyhledávacího pole | Dotaz nevrátí neautorizovaná data | ✅ OK |
+| T-10 | Přístup na /admin bez role | Přihlásit jako běžný uživatel, navštívit /admin | Přesměrování na katalog | ✅ OK |
+| T-11 | Responzivita | Otevřít na mobilním zařízení (375px) | Hamburger menu, karty v jednom sloupci | ✅ OK |
+| T-12 | SQL injection pokus | Zadat `' OR '1'='1` do vyhledávání | Dotaz nevrátí neautorizovaná data | ✅ OK |
 
 ---
 
 ## Monitoring
 
-Aplikace neobsahuje automatický monitoring (není v rozsahu školního projektu). Dohled nad stavem probíhá manuálně:
+Aplikace neobsahuje automatický monitoring (není v rozsahu školního projektu). Dohled probíhá manuálně:
 
 ### Dostupné nástroje
 
-- **phpMyAdmin / Adminer** – přímý přístup k databázi, kontrola tabulek, počtů záznamů
+- **phpMyAdmin / Adminer** – přímý přístup k databázi, kontrola tabulek a počtů záznamů
 - **Apache error log** – `/var/log/apache2/error.log` na školním serveru
 - **PHP error log** – chyby jsou logovány přes `error_log()`, výstup na obrazovku je vypnut (`display_errors = 0`)
 
-### Co sledovat manuálně
+### Klíčové dotazy pro ruční monitoring
 
-| Metrika | Kde sledovat |
-|---------|-------------|
-| Počet aktivních výpůjček | `SELECT COUNT(*) FROM rentals WHERE returned_at IS NULL` |
+| Metrika | SQL dotaz |
+|---------|-----------|
+| Aktivní výpůjčky | `SELECT COUNT(*) FROM rentals WHERE returned_at IS NULL` |
 | Knihy po splatnosti | `SELECT * FROM rentals WHERE due_at < NOW() AND returned_at IS NULL` |
-| Výše penále | `SELECT SUM(fine_amount) FROM rentals WHERE fine_paid = 0` |
+| Celkové penále | `SELECT SUM(fine_amount) FROM rentals WHERE fine_paid = 0` |
 | Registrovaní uživatelé | `SELECT COUNT(*) FROM users WHERE is_active = 1` |
 
 ### Cache
 
-Výsledky Google Books API jsou ukládány do souboru v `public/cache/` s TTL 30 dní, aby se minimalizoval počet externích API volání.
+Výsledky Google Books API jsou ukládány do souborů v `public/cache/` s TTL 30 dní, aby se minimalizoval počet externích API volání.
 
 ---
 
@@ -643,7 +576,7 @@ Výsledky Google Books API jsou ukládány do souboru v `public/cache/` s TTL 30
 | Práce vývojářů | 78 hodin × 0 Kč (školní projekt) | 0 Kč |
 | **Celkem** | | **0 Kč** |
 
-> Při komerčním nasazení by hlavní náklady představovalo: VPS hosting (~200–500 Kč/měsíc), případně placená úroveň Google Books API při překročení denního limitu.
+> Při komerčním nasazení: VPS hosting (~200–500 Kč/měsíc), případně placená úroveň Google Books API při překročení denního limitu.
 
 ### Rozdělení práce
 
@@ -669,16 +602,16 @@ Projekt BookLend splnil všechny hlavní cíle stanovené na začátku semestru.
 
 Nad rámec původního zadání bylo implementováno:
 - Integrace Google Books API s prioritizací českých knih
-- PHP transakce jako náhrada MySQL triggerů (kompatibilita s levnými hostingy)
+- PHP transakce jako náhrada MySQL triggerů (kompatibilita se sdílenými hostingy)
 - File-based cache pro API výsledky
 - SEO (sitemap.xml, robots.txt, Open Graph, Schema.org JSON-LD)
 - Mobile-first responzivní design
 
 ### Co nebylo implementováno
 
-- **Platební brána** – prodloužení výpůjček je v aplikaci zaznamenáno jako placené, ale skutečná integrace platby (GoPay, Stripe) nebyla součástí zadání
+- **Platební brána** – prodloužení je zaznamenáno jako placené, ale skutečná integrace (GoPay, Stripe) nebyla součástí zadání
 - **Email notifikace** – upozornění na blížící se splatnost nebylo implementováno
-- **Automatické penalizace** – penále je vypočítáno, ale jeho vymáhání je manuální
+- **Automatické vymáhání penále** – penále je vypočítáno, ale jeho vymáhání je manuální
 
 ### Další příležitosti
 
