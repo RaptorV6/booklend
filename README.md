@@ -516,17 +516,40 @@ Výsledky Google Books API jsou ukládány do souboru v `public/cache/` s TTL 30
 
 | Člen | Role | Kompetence | Strávená doba |
 |------|------|------------|---------------|
-| Denis Van | Vývojář (full-stack) | PHP backend, MVC architektura, databázový návrh, JS frontend, CSS | ~40 hod |
+| Denis Vaň | Vedoucí vývojář (full-stack) | PHP backend, MVC architektura, databázový návrh, JS frontend, CSS design | ~40 hod |
+| Jiří Pavlis | UI/UX designér | Návrh uživatelského rozhraní, wireframy, grafická konzistence, testování designu na mobilních zařízeních | ~12 hod |
+| Jakub Cink | Frontend designér, tester | Styly stránek, responzivní layout, uživatelské testování, zpětná vazba k UX | ~10 hod |
+| Michal Havelka | Projektový manažer, finanční plán | Řízení projektu, časový harmonogram, rozdělení úkolů, kalkulace nákladů na provoz a vývoj | ~8 hod |
+| Miroslav Krček | Analytik, dokumentace | Analýza požadavků, use case diagram, psaní dokumentace, závěrečné review | ~8 hod |
+
+**Celkem:** ~78 hodin
+
+### Rozpočet a náklady projektu
+
+| Položka | Popis | Náklad |
+|---------|-------|--------|
+| Hosting | Školní server KIT ČZU (zdarma pro studenty) | 0 Kč |
+| Doména | Subdoména školního serveru | 0 Kč |
+| Google Books API | Free tier (1 000 req/den) | 0 Kč |
+| Vývojové nástroje | VS Code, XAMPP, WinSCP (open-source / zdarma) | 0 Kč |
+| Práce vývojářů | 78 hodin × 0 Kč (školní projekt) | 0 Kč |
+| **Celkem** | | **0 Kč** |
+
+> Při komerčním nasazení by hlavní náklady představovalo: VPS hosting (~200–500 Kč/měsíc), případně placená úroveň Google Books API při překročení denního limitu.
 
 ### Rozdělení práce
 
-| Oblast | Popis |
-|--------|-------|
-| Backend | PHP MVC architektura, Router, Auth, PDO transakce, API integrace |
-| Frontend | HTML šablony, CSS (style, responsive, admin), Vanilla JS (AJAX, toast, modal) |
-| Databáze | Návrh schématu, indexy, triggery, seed data |
-| DevOps | Nasazení na školní server, konfigurace Apache (.htaccess) |
-| Dokumentace | README, komentáře v kódu |
+| Oblast | Zodpovídá |
+|--------|-----------|
+| PHP backend, MVC, databáze, API | Denis Vaň |
+| UI/UX návrh, grafika | Jiří Pavlis, Jakub Cink |
+| Responzivní CSS, frontend styly | Denis Vaň, Jiří Pavlis, Jakub Cink |
+| Projektový plán, harmonogram | Michal Havelka |
+| Finanční plán, kalkulace nákladů | Michal Havelka |
+| Analýza požadavků, use case | Miroslav Krček |
+| Dokumentace (README) | Miroslav Krček, Denis Vaň |
+| Nasazení na server, DevOps | Denis Vaň |
+| Uživatelské testování | Jakub Cink, Miroslav Krček |
 
 ---
 
