@@ -271,6 +271,114 @@ Aplikace záměrně **nepoužívá žádný PHP framework** (Laravel, Symfony ap
 
 ---
 
+## Editace obsahu, responzivita a SEO
+
+### Editace obsahu webu (PHP administrace)
+
+Obsah webu (katalog knih) spravuje administrátor přes vestavěný admin panel dostupný na `/admin`. Jde o plnohodnotný CRUD systém implementovaný v PHP.
+
+**Operace dostupné adminovi:**
+
+| Akce | Endpoint | Popis |
+|------|----------|-------|
+| Zobrazit katalog | `GET /admin` | Přehled všech knih, vyhledávání, statistiky |
+| Přidat knihu | `POST /api/admin/create` | Ruční zadání nebo import z Google Books API |
+| Upravit knihu | `POST /api/admin/update` | Editace všech polí (název, autor, žánr, rok, jazyk, popis, obálka) |
+| Změnit počet kopií | `POST /api/admin/update-stock` | Úprava `total_copies` a `available_copies` |
+| Smazat knihu | `POST /api/admin/delete` | Soft delete – nastaví `deleted_at`, kniha zmizí z katalogu |
+
+**Google Books API integrace** zjednodušuje přidávání knih — admin zadá název nebo ISBN a systém automaticky doplní metadata (název, autor, žánr, rok vydání, popis, URL obálky). Výsledky API jsou cachovány 30 dní v `public/cache/`.
+
+### Responzivita
+
+Aplikace používá **mobile-first přístup** — styly jsou nejprve navrženy pro malé obrazovky a postupně rozšiřovány pro větší.
+
+**Breakpointy (responsive.css):**
+
+| Breakpoint | Zařízení | Změny layoutu |
+|-----------|----------|---------------|
+| `< 480px` | Malý mobil | 1 sloupec karet, kompaktní navbar |
+| `480px–768px` | Mobil / tablet | 2 sloupce karet, hamburger menu |
+| `768px–1024px` | Tablet | 3 sloupce karet |
+| `> 1024px` | Desktop | 4–6 sloupců karet, plný navbar |
+
+**Klíčové prvky responzivity:**
+- **Hamburger menu** — na mobilech se navigace skryje za ikonu ≡ (implementováno v Vanilla JS)
+- **CSS Grid / Flexbox** — knihovní karty se automaticky přizpůsobují šířce obrazovky
+- **Relativní jednotky** — `em`, `rem`, `%`, `vw` místo pevných px hodnot
+- **Obrázky obálek** — `max-width: 100%`, `object-fit: cover` pro zachování poměru stran
+
+### SEO
+
+#### sitemap.xml
+
+Dynamicky generovaný soubor `public/sitemap.php` vrací XML s URL všech knih v katalogu. Apache rewrite pravidlo v `public/.htaccess` přesměrovává `/sitemap.xml` → `sitemap.php`:
+
+```
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+```
+
+Ukázka výstupu:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://ete89e.pef.czu.cz/zs2526/09/booklend/public/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://ete89e.pef.czu.cz/zs2526/09/booklend/public/kniha/eragon-mekka-vazba</loc>
+    <lastmod>2025-11-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- ... všechny knihy ... -->
+</urlset>
+```
+
+#### robots.txt
+
+Dynamicky generovaný soubor `public/robots.php` (rewrite: `/robots.txt` → `robots.php`) blokuje indexaci administrace a API endpointů a odkazuje na sitemap:
+
+```
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://ete89e.pef.czu.cz/zs2526/09/booklend/public/sitemap.xml
+```
+
+#### Meta tagy a strukturovaná data
+
+Každá stránka obsahuje SEO meta tagy generované dynamicky v PHP:
+
+```html
+<!-- Základní meta tagy -->
+<title>Eragon – měkká vazba – Christopher Paolini | BookLend</title>
+<meta name="description" content="...">
+
+<!-- Open Graph (sdílení na sociálních sítích) -->
+<meta property="og:type" content="book">
+<meta property="og:title" content="Eragon – měkká vazba – Christopher Paolini">
+<meta property="og:image" content="https://books.google.com/...">
+
+<!-- Schema.org JSON-LD (strukturovaná data pro Google) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "Eragon – měkká vazba",
+  "author": { "@type": "Person", "name": "Christopher Paolini" },
+  "isbn": "9788025303603",
+  "image": "https://books.google.com/..."
+}
+</script>
+```
+
+---
+
 ## Bezpečnost
 
 ### Implementovaná opatření
