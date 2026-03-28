@@ -5,9 +5,9 @@
 
 // Database
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'book');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'your_db_name');
+define('DB_USER', 'your_db_user');
+define('DB_PASS', 'your_db_password');
 
 // Cache
 define('CACHE_DIR', __DIR__ . '/public/cache');
@@ -31,7 +31,7 @@ define('BASE_URL', $protocol . $host . $scriptPath);
 
 // Google Books API (high-resolution images + metadata)
 define('GOOGLE_BOOKS_API', 'https://www.googleapis.com/books/v1/volumes');
-define('GOOGLE_BOOKS_API_KEY', 'AIzaSyCRGRFxGdpwlp96t_ZaUgr43D8XSTwx_tA');
+define('GOOGLE_BOOKS_API_KEY', 'your_google_books_api_key');
 
 // Timezone
 date_default_timezone_set('Europe/Prague');
