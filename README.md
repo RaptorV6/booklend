@@ -367,14 +367,11 @@ if ($route['middleware'] === 'admin') {
 
 ### Zdroje použitých technologií
 
-- [PHP Dokumentace – PDO](https://www.php.net/manual/en/book.pdo.php)
-- [PHP Dokumentace – password_hash()](https://www.php.net/manual/en/function.password-hash.php)
+- [PHP 8.2 – oficiální dokumentace](https://www.php.net/docs.php)
+- [MySQL 8.0 – referenční příručka](https://dev.mysql.com/doc/refman/8.0/en/)
+- [Apache HTTP Server – dokumentace](https://httpd.apache.org/docs/2.4/)
 - [Google Books API – dokumentace](https://developers.google.com/books/docs/v1/using)
-- [MDN Web Docs – Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
-- [OWASP – SQL Injection Prevention](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
-- [OWASP – XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
-- [Schema.org – Book](https://schema.org/Book)
-- [Apache mod_rewrite dokumentace](https://httpd.apache.org/docs/2.4/mod/mod_rewrite.html)
+- [MDN Web Docs – JavaScript ES6+](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
 ---
 
