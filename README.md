@@ -13,7 +13,7 @@
 5. [Použité technologie](#použité-technologie)
    - [Frameworky](#frameworky)
    - [Bezpečnost](#bezpečnost)
-   - [Zdroje](#zdroje-technologie)
+   - [Zdroje](#zdroje-použitých-technologií)
 6. [Příklady implementace](#příklady-implementace)
 7. [Testování](#testování)
 8. [Monitoring](#monitoring)
@@ -365,7 +365,7 @@ if ($route['middleware'] === 'admin') {
 
 ---
 
-### Zdroje (technologie) {#zdroje-technologie}
+### Zdroje použitých technologií
 
 - [PHP Dokumentace – PDO](https://www.php.net/manual/en/book.pdo.php)
 - [PHP Dokumentace – password_hash()](https://www.php.net/manual/en/function.password-hash.php)
